@@ -80,7 +80,7 @@ function pr_run_hooks() {
 # ├──(master [origin/master ] Unstaged)
 # └───>
 function +pr-mode-full() {
-    local i info_line_width return_status_width filler venv_shim npm_shim
+    local i info_line_width filler_width filler
 
     infoline=( ${pr_com[pwd]} ${pr_com[usr]} )
 
@@ -91,33 +91,20 @@ function +pr-mode-full() {
          "${cyan} n${gray}(${pr_com[npm]}${gray})${reset}"
      )
 
-    # The prompt was not taking up the full width of the terminal when displaying npm info
-    # So if we are in a npm directory then we add a one character shim to the width of the filler
-     npm_shim=0
-     if [[ -n ${pr_com[npm]} ]]; then
-         npm_shim+=1
-     fi
-
     # If we are in a virtualenv we want to display that on the info line
     [[ -n ${pr_com[venv]} ]] && infoline[1]=(
         ${infoline[1]}
         "${blue} v${gray}(${pr_com[venv]}${gray})${reset}"
     )
 
-    # The prompt was not taking up the full width of the terminal when in a virtualenv
-    # If we are in a virtualenv then we add a one character shim to the width of the filler
-    venv_shim=0
-    if [[ -n ${pr_com[venv]} ]]; then
-        venv_shim+=1 # Shim the filler to take up the entire width of the prompt
-    fi
-
     # Full-width filler; search/replace color wraps to find real text width
     info_line_width=${(S)infoline//\%\{*\%\}} # search-and-replace color escapes
     info_line_width=${#${(%)info_line_width}} # expand all escapes and count the chars
-    return_status_width=3 # We will take up three spaces to display the return code (✔)
+    filler_width=$(( COLUMNS - info_line_width - 4 )) # ┌── prefix + trailing ─
+    (( filler_width < 0 )) && filler_width=0
 
     # Set the text string that will be used to fill the width of the terminal filler
-    filler="${gray}${(l:$(( $COLUMNS - $info_line_width - $return_status_width + $venv_shim + $npm_shim))::─:)}${reset}"
+    filler="${gray}${(l:${filler_width}::─:)}${reset}"
     infoline[-1]=( ${filler} ${infoline[-1]} )
 
     # --------------------------
@@ -309,6 +296,13 @@ function precmd_prompt {
 
     # Set the prompts
     PROMPT="${(F)prompt_left_lines} "
+}
+
+# Rebuild and repaint the active prompt when the terminal is resized. Without
+# this, the full-width filler can leave stale line fragments after SIGWINCH.
+function TRAPWINCH() {
+    precmd_prompt
+    zle && zle reset-prompt
 }
 
 # Display a cheatsheet of what each prompt color/symbol means
