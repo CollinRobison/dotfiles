@@ -30,7 +30,7 @@ cask "firefox"
 cask "google-chrome"
 cask "brave-browser"
 # Terminal emulator as alternative to Apple's Terminal app
-cask "iterm2"
+#cask "iterm2"
 # Cross-platform terminal emulator
 cask "kitty"
 # Window manager
@@ -80,3 +80,7 @@ vscode "waderyan.gitblame"
 vscode "yzhang.markdown-all-in-one"
 uv "specify-cli"
 npm "corepack"
+
+# Fonts: 
+## Maple Mono NF https://github.com/subframe7536/maple-font
+cask "font-maple-mono-nf"
