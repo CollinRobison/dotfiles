@@ -1,2 +1,2 @@
 # Dotfiles
-This is a Repo for dotfiles I use.
+This is a repo for dotfiles I use.
