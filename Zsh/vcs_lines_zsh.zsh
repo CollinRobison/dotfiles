@@ -100,7 +100,9 @@ function +pr-mode-full() {
     # Full-width filler; search/replace color wraps to find real text width
     info_line_width=${(S)infoline//\%\{*\%\}} # search-and-replace color escapes
     info_line_width=${#${(%)info_line_width}} # expand all escapes and count the chars
-    filler_width=$(( COLUMNS - info_line_width - 4 )) # ┌── prefix + trailing ─
+    # Leave the final column unused. Hitting the right edge sets the terminal's
+    # autowrap flag, which makes old prompt lines reflow badly after resizes.
+    filler_width=$(( COLUMNS - info_line_width - 5 )) # ┌── prefix + trailing ─ + safety column
     (( filler_width < 0 )) && filler_width=0
 
     # Set the text string that will be used to fill the width of the terminal filler
@@ -304,6 +306,16 @@ function TRAPWINCH() {
     precmd_prompt
     zle && zle reset-prompt
 }
+
+function +pr-transient-prompt() {
+    [[ -z ${BUFFER} ]] && { zle .accept-line; return }
+
+    PROMPT="${gray}└─${pr_com[pwd]}${gray}-➤${reset} "
+    zle reset-prompt
+    zle .accept-line
+}
+
+[[ -o interactive ]] && zle -N accept-line +pr-transient-prompt
 
 # Display a cheatsheet of what each prompt color/symbol means
 function prompt-help() {
