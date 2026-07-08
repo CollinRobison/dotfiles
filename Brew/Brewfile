@@ -39,7 +39,8 @@ cask "loop"
 cask "mac-mouse-fix"
 # Monitor Control - External Monitor Utility - http://github.com/MonitorControl/MonitorControl
 cask "monitorcontrol"
-# Open-source code editor
+# code editors
+brew "neovim"
 cask "visual-studio-code"
 
 vscode "bierner.markdown-mermaid"
