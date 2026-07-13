@@ -3,6 +3,8 @@ tap "theboredteam/boring-notch", "https://github.com/TheBoredTeam/homebrew-borin
 # Bourne-Again SHell, a UNIX command interpreter
 brew "bash"
 brew "zsh"
+# Faster grep replacement
+brew "ripgrep"
 # Command-line tool to interact with exercism.io
 brew "exercism"
 # GitHub command-line tool
