@@ -1,5 +1,6 @@
 vim.g.mapleader = " " -- Set leader key before Lazy
  
 require("collin.lazy_init")
+require("collin.set")
+require("collin.remap")
 
-vim.cmd.colorscheme("tokyonight")
