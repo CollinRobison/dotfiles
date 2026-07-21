@@ -3,8 +3,11 @@ local which_key = require("which-key")
 which_key.add({
   {
     "<leader>e",
-    vim.cmd.Ex,
+    function()
+      require("nvim-tree.api").tree.toggle()
+    end,
     desc = "Open file explorer",
+    silent = true,
   },
   {
     "<F2>",
