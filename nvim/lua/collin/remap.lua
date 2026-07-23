@@ -23,4 +23,10 @@ which_key.add({
     end,
     desc = "Toggle relative line numbers",
   },
+  {
+    "<leader>nh",
+    ":nohl<CR>",
+    mode = "n",
+    desc = "Clear search highlights",
+  },
 })
