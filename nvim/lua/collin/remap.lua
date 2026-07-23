@@ -1,14 +1,6 @@
 local which_key = require("which-key")
 
 which_key.add({
- {
-    "<leader>nt",
-    function()
-      require("nvim-tree.api").tree.toggle()
-    end,
-    desc = "Toggle nvim-tree",
-    silent = true,
-  },
   {
     "<F2>",
     function()
