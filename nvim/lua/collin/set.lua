@@ -1,6 +1,6 @@
 local opt = vim.opt
 
-vim.cmd.colorscheme("tokyonight")
+vim.cmd.colorscheme("vague")
 
 -- line numbers
 opt.number = true

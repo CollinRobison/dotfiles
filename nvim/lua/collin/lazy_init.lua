@@ -12,7 +12,10 @@ end
 vim.opt.rtp:prepend(lazypath)
  
 require("lazy").setup({
-    spec = "collin.lazy",
+    spec = {
+	{ import = "collin.lazy" },
+	{ import = "collin.lazy.themes" }
+    },
     change_detection = { notify = true},
 
       -- automatically check for plugin updates
