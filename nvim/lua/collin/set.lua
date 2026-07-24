@@ -2,6 +2,9 @@ local opt = vim.opt
 
 vim.cmd.colorscheme("vague")
 
+-- Persist buffers, layout, working directory, terminals, and local options in sessions.
+opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
+
 -- line numbers
 opt.number = true
 opt.relativenumber = false
