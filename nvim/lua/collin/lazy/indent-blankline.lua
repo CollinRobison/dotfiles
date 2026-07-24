@@ -12,7 +12,7 @@ return {
     hooks.register(hooks.type.HIGHLIGHT_SETUP, function()
       local colors = require("vague").get_palette()
       vim.api.nvim_set_hl(0, "IblIndentMuted", { fg = colors.line })
-      vim.api.nvim_set_hl(0, "IblScopePurple", { fg = colors.parameter, underline = true })
+      vim.api.nvim_set_hl(0, "IblScopePurple", { fg = colors.parameter })
     end)
 
     require("ibl").setup({
@@ -27,7 +27,7 @@ return {
         char = "▎",
         highlight = "IblScopePurple",
         show_start = true,
-        show_end = false,
+        show_end = true,
       },
     })
   end,
