@@ -41,6 +41,7 @@ return {
     dashboard.section.buttons.val = {
       dashboard.button("e", "  > New File", "<cmd>ene<CR>"),
       dashboard.button("nt", "  > Toggle file explorer", "<cmd>NvimTreeToggle<CR>"),
+      dashboard.button("fp", "󰉋  > Find Project", "<cmd>Telescope project project<CR>"),
       dashboard.button("ff", "󰱼  > Find File", "<cmd>Telescope find_files<CR>"),
       dashboard.button("fs", "  > Find Word", "<cmd>Telescope live_grep<CR>"),
       dashboard.button("q", "  > Quit NVIM", "<cmd>qa<CR>"),
