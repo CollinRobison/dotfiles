@@ -19,6 +19,10 @@ brew "git"
 brew "neofetch"
 # Open-source, cross-platform JavaScript runtime environment
 brew "node"
+# Open-source programming language required by gopls and sqls
+brew "go"
+# .NET SDK required by the Roslyn C# language server
+brew "dotnet"
 # The AI coding agent built for the terminal.
 brew "anomalyco/tap/opencode", trusted: true
 # E-books management software
