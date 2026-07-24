@@ -2,6 +2,9 @@ local opt = vim.opt
 
 vim.cmd.colorscheme("vague")
 
+-- Enable 24-bit GUI colors for themes and UI plugins.
+opt.termguicolors = true
+
 -- Persist buffers, layout, working directory, terminals, and local options in sessions.
 opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
 
@@ -27,3 +30,4 @@ opt.cursorline = true -- highlight the current cursor line
 
 -- backspace
 opt.backspace = "indent,eol,start" -- allow backspace on indent, end of line or insert mode start position
+
