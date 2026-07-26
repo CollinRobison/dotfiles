@@ -444,6 +444,265 @@ This section contains every mapping configured in this Neovim setup. Mappings li
 | Autopairs | `<M-e>` | FastWrap in Insert mode. |
 | Discovery | `<leader>?` | Show buffer-local mappings. |
 
+## Plugin Labs
+
+These labs teach the configured plugins through small, purposeful tasks. Do one at a time in a small project or a throwaway Git repository. The goal is to recognize when a tool helps, not to memorize every command.
+
+### Lazy.nvim: Plugin Manager
+
+**Goal:** know where plugins come from and how to inspect their health.
+
+1. Open `:Lazy` from any buffer, or press `l` on the Alpha dashboard.
+2. Find a plugin such as `gitsigns.nvim` and inspect its load state, dependencies, and log.
+3. Press `?` inside Lazy to see its own controls.
+4. Close the window with `q`.
+
+| Command | When to use it |
+| --- | --- |
+| `:Lazy` | Open the plugin manager and inspect plugin state. |
+| `:Lazy check` | Check whether configured plugins have updates. |
+| `:Lazy sync` | Install missing plugins, clean removed ones, and update plugins. Run deliberately because it can change locked versions. |
+| `:Lazy restore` | Return plugins to versions recorded in `lazy-lock.json`. |
+| `:Lazy profile` | Investigate slow startup or plugin load time. |
+
+The lockfile at `nvim/lazy-lock.json` records exact plugin revisions. Change it through Lazy commands rather than editing it by hand.
+
+### Alpha: Start Dashboard
+
+**Goal:** make the dashboard a useful launch point rather than a screen to skip.
+
+1. Start `nvim` without a file.
+2. Press `ff` to find a known file, then close that buffer with `<leader>bd`.
+3. Restart `nvim` and press `fp` to choose a project.
+4. Restart once more and press `l` to inspect plugins or `lg` to open LazyGit.
+
+The dashboard is intentionally a short set of launch actions. Its keys apply only while the Alpha dashboard is focused; the same letters in a normal file have their usual Vim meaning.
+
+### Telescope: Search And Project Switching
+
+**Goal:** replace manual folder browsing with search-driven navigation.
+
+1. Use `<leader>fp` to choose a project. Notice that the file explorer opens and the working directory in Lualine changes.
+2. Use `<leader>ff`, type part of a filename, and press Enter to open it.
+3. Use `<leader>fg`, search for a phrase that occurs in several files, and open a result.
+4. With the cursor on a useful word, use `<leader>fw` to find all project occurrences.
+5. Use `<leader>fR` after closing a picker to reopen the last search.
+
+| Command | When to use it |
+| --- | --- |
+| `:Telescope` | List Telescope pickers and extensions. |
+| `:Telescope find_files` | Find a file when you prefer commands over mappings. |
+| `:Telescope live_grep` | Search project text. |
+| `:Telescope diagnostics` | Browse diagnostics across the project. |
+| `:Telescope project project` | Open the configured project picker. |
+
+In any Telescope picker, type to narrow results, use `<C-j>` and `<C-k>` to move, press Enter to open, and press `<Esc>` to cancel. Use `<leader>fk` whenever you cannot remember a mapping.
+
+### nvim-tree: File Explorer
+
+**Goal:** learn the small set of explorer operations that are safer than improvising file commands.
+
+1. Open the explorer with `<leader>nt` and focus it with `<leader>nn`.
+2. Create a disposable file with `a`, name it, open it with Enter, then return to the tree with `<leader>nn`.
+3. Rename the file with `r` and delete it with `d`. Read confirmation prompts before accepting.
+4. Open a source file in the editor, then use `<leader>nf` to reveal it in the tree.
+5. Press `g?` in the tree to view its built-in help.
+
+| Command | When to use it |
+| --- | --- |
+| `:NvimTreeToggle` | Open or close the file explorer. |
+| `:NvimTreeFocus` | Move focus to the explorer. |
+| `:NvimTreeFindFile` | Reveal the current file. |
+| `:NvimTreeRefresh` | Refresh files and Git state after external changes. |
+| `:NvimTreeCollapse` / `:NvimTreeExpand` | Fold or unfold the tree. |
+
+### Bufferline: Open Files
+
+**Goal:** distinguish buffers from windows and move through active files quickly.
+
+1. Open three files with `<leader>ff`.
+2. Move among them with `<S-h>` and `<S-l>`.
+3. Use `<leader>bp` and type the displayed label to jump directly to one buffer.
+4. Close an unneeded buffer with `<leader>bd`; this closes the file buffer without necessarily closing the split that displayed it.
+
+| Command | When to use it |
+| --- | --- |
+| `:BufferLineCyclePrev` / `:BufferLineCycleNext` | Move through buffers from command mode. |
+| `:BufferLinePick` | Choose a visible buffer by its label. |
+| `:bdelete` | Close the current buffer. |
+| `:buffers` or `:ls` | List buffers when debugging a busy workspace. |
+
+### AutoSession: Restore Workspaces
+
+**Goal:** trust sessions without treating them as a substitute for saving files.
+
+1. In a project, open two files and create a split with `:vsplit`.
+2. Change to another tab with `:tabnew`, open a different file, then run `<leader>ws`.
+3. Quit Neovim with `:qa` after writing your files.
+4. Start Neovim again, use `<leader>wr`, and choose the project session.
+5. Confirm that buffers, tabs, and layout return. If the layout is not useful, change it and save again.
+
+| Command | When to use it |
+| --- | --- |
+| `:AutoSession search` | Find and restore a session. |
+| `:AutoSession save` | Save the current layout explicitly. |
+| `:AutoSession delete` | Remove an old session you no longer want. |
+
+Sessions restore editor state, not unsaved file contents. Write files before relying on a session.
+
+### Lualine, Vague, And Icons: Read The Interface
+
+**Goal:** learn which UI details contain useful state.
+
+1. Open a tracked file in a Git repository. Look at Lualine's branch, diff counts, diagnostics, path, current working directory, and cursor location.
+2. Make one line change and notice the diff count in Lualine and the Gitsigns marker in the gutter.
+3. Open nvim-tree and Telescope. Notice file-type icons supplied by `nvim-web-devicons` and `mini.icons`.
+4. Use `i`, `v`, `R`, and `:` to enter Insert, Visual, Replace, and Command modes. Notice the statusline mode color change.
+
+`vague.nvim` is the active color scheme. `tokyonight.nvim` is installed as an alternate theme but is not active by default.
+
+| Command | When to use it |
+| --- | --- |
+| `:colorscheme vague` | Return to the configured theme. |
+| `:colorscheme tokyonight-night` | Temporarily preview TokyoNight for the current Neovim session. |
+| `:hi Normal` | Inspect the active highlight for normal text. |
+| `:messages` | Read recent status and plugin messages. |
+
+The icon plugins are dependencies rather than interactive tools. If icons look like squares or missing glyphs, verify that your terminal is using a Nerd Font such as the configured Maple Mono NF.
+
+### Treesitter And Autotag: Structural Editing
+
+**Goal:** see how syntax-aware behavior improves highlighting, indentation, pairs, and markup editing.
+
+1. Open a file in a configured language such as Lua, Python, TypeScript, JSON, HTML, CSS, Markdown, or YAML.
+2. Add nested code and observe indentation. Treesitter supplies the indentation expression when a parser is available.
+3. In an HTML, JSX, TSX, Svelte, or XML file, type an opening tag such as `<section>`. Autotag should insert the closing tag.
+4. Rename the opening tag and confirm that the paired closing tag follows.
+5. Open `:InspectTree` in a source file to see the parsed syntax tree, then close the inspection window when finished.
+
+| Command | When to use it |
+| --- | --- |
+| `:TSInstallInfo` | See installed Treesitter parsers and supported languages. |
+| `:TSUpdate` | Update installed parsers after updating the plugin. |
+| `:Inspect` | Inspect the syntax highlight and Treesitter capture at the cursor. |
+| `:InspectTree` | Explore the parsed syntax tree for the current buffer. |
+
+If a language has no parser or an out-of-date parser, syntax-aware features can be reduced even when a language server still works.
+
+### Indent Blankline And Autopairs: Editing Feedback
+
+**Goal:** make automatic editing help visible and controllable.
+
+1. In an indented source file, use `<leader>ui` to hide and restore indentation guides.
+2. Move through nested blocks and use `<leader>us` to compare normal guides with highlighted scope guides.
+3. In Insert mode, type `(`, `[`, `{`, `"`, and backticks. Notice that matching pairs are created.
+4. Type inside a pair and press Backspace or Enter to observe pair-aware behavior.
+5. Toggle pairs off with `<leader>ua`, repeat one example, then toggle them back on.
+6. In a markup file, select or position text near a tag and try `<M-e>` to practice FastWrap.
+
+| Command | When to use it |
+| --- | --- |
+| `:IBLToggle` | Toggle indentation guides. |
+| `:IBLToggleScope` | Toggle scope guides. |
+
+Autopairs has no separate command palette in this configuration. Its important controls are `<leader>ua` and `<M-e>`.
+
+### Mason And Native LSP: Code Intelligence
+
+**Goal:** verify that the right language server is attached and practice the difference between navigation, diagnostics, actions, and formatting.
+
+1. Open a source file that belongs to a configured language.
+2. Run `:LspInfo` and identify the attached client or clients.
+3. Put the cursor on a symbol and try `K`, `grr`, `gri`, and `gO` where the language server supports them.
+4. Create a harmless type or syntax error, save, then use `]d`, `[d`, and `<leader>ld` to inspect it.
+5. Try `gra` on a diagnostic to look for a code action.
+6. Copy an identifier, use `grn` to rename it, inspect the proposed edits, and confirm only if they are correct.
+7. Use `<leader>lf` on a file that supports LSP formatting.
+
+| Command | When to use it |
+| --- | --- |
+| `:Mason` | Inspect, install, or update language servers. |
+| `:MasonLog` | Diagnose a failed Mason installation. |
+| `:LspInfo` | See attached language servers and their capabilities. |
+| `:checkhealth vim.lsp` | Run Neovim's LSP health checks. |
+| `:checkhealth mason` | Run Mason health checks. |
+
+Completion is native Neovim completion. When the menu opens, use `<C-n>`, `<C-p>`, `<C-y>`, and `<C-e>` rather than expecting a completion-plugin-specific mapping.
+
+### Todo Comments: Keep Follow-Up Work Visible
+
+**Goal:** turn comment markers into a navigable work list.
+
+1. Add three comments in a disposable source file: `TODO:`, `FIX:`, and `NOTE:`.
+2. Use `]t` and `[t` to move among them.
+3. Use `<leader>ft` to search all project todo comments in Telescope.
+4. Use `<leader>fT`, then `:copen`, `:cnext`, and `:cprev` to explore the Quickfix list. Press Enter on an entry to jump to it.
+5. Replace a completed `TODO:` with a normal comment and confirm it leaves the picker on the next search.
+
+| Command | When to use it |
+| --- | --- |
+| `:TodoTelescope` | Open the project todo picker. |
+| `:TodoQuickFix` | Put project todos in Quickfix. |
+| `:TodoLocList` | Put project todos in the location list. |
+
+Use a colon after a keyword. `TODO: explain this` is recognized; plain text mentioning the word TODO is intentionally not highlighted unless it is a matching comment marker.
+
+### Gitsigns: Review And Stage Line Changes
+
+**Goal:** practice a safe hunk-level Git workflow before using it on important work.
+
+1. In a disposable Git repository, edit two separate areas of a tracked file and save it.
+2. Use `]h` and `[h` to move between changed hunks.
+3. Preview each with `<leader>hp`, then use `<leader>hi` to compare the inline view.
+4. Stage only one hunk with `<leader>hs`.
+5. Use `<leader>hd` to inspect remaining unstaged changes against the index.
+6. Use `<leader>hD` to inspect all changes against `HEAD`.
+7. Use `<leader>hq` and `:copen` to see the file's hunks as a navigable list.
+8. Make a disposable third hunk and reset only that hunk with `<leader>hr`.
+
+| Command | When to use it |
+| --- | --- |
+| `:Gitsigns` | Discover every Gitsigns action through command completion. |
+| `:Gitsigns blame` | Open full-file blame in a scroll-bound split. |
+| `:Gitsigns diffthis HEAD` | Diff the current file against a revision. |
+| `:Gitsigns change_base HEAD~1` | Temporarily compare signs against an earlier revision. |
+| `:Gitsigns reset_base` | Restore the normal index comparison. |
+| `:Gitsigns refresh` | Force Gitsigns to refresh after unusual external Git changes. |
+
+Do not use `<leader>hR` in this lab until you have intentionally created throwaway changes. It discards all unstaged changes in the current file.
+
+### LazyGit: Repository Workflow
+
+**Goal:** build confidence with the full Git interface while keeping code visible in Neovim.
+
+1. Open `<leader>lg` inside a small Git repository and inspect the status panel.
+2. Use LazyGit's on-screen key hints to open files, inspect a diff, stage one file, and unstage it again.
+3. Press `q` to return to Neovim, then confirm Gitsigns updated its gutter markers.
+4. Reopen LazyGit with `<leader>lG` from a file inside a nested repository or submodule to see the current-file-root behavior.
+5. Use `<leader>lL` for repository history and `<leader>ll` for the current file's history.
+6. In a disposable repository, create a commit. When LazyGit opens a commit-message split in Neovim, write the message and close the buffer with `:wq` to let LazyGit continue.
+
+| Command | When to use it |
+| --- | --- |
+| `:LazyGit` | Open LazyGit in the active project working directory. |
+| `:LazyGitCurrentFile` | Open LazyGit at the current file's Git root. |
+| `:LazyGitFilter` | Open project commit history. |
+| `:LazyGitFilterCurrentFile` | Open current-file history. |
+| `:LazyGitConfig` | Open LazyGit's own configuration file. |
+
+Inside the dashboard, `q` closes LazyGit. Follow LazyGit's visible key hints for actions such as stage, commit, branch, stash, rebase, and remote operations; those are LazyGit defaults and can change independently of this Neovim configuration.
+
+### Which-key: Discover Before Memorizing
+
+**Goal:** use discovery tools instead of breaking flow to search configuration files.
+
+1. In a regular source file, press Space and pause briefly. Which-key displays available leader continuations.
+2. Press `<leader>?` to show buffer-local mappings, especially after opening a file with LSP support.
+3. Press `<leader>fk`, search for `hunk`, `diagnostic`, or `LazyGit`, and inspect the mapping descriptions.
+4. When you find a useful mapping, use it once immediately instead of trying to memorize the whole list.
+
+Which-key has a one-second delay in this setup. It is a reminder system, not a required menu for every command.
+
 ## First Week Practice Plan
 
 ### Day 1: Modes And Safety
