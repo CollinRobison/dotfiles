@@ -41,6 +41,8 @@ The main plugin groups are:
 | Git line changes | Gitsigns |
 | Full Git interface | LazyGit |
 | TODO/FIX comments | Todo Comments |
+| Write Markdown, notes, and docs | Markview, Mkdnflow, Conform, nvim-lint, spell checking |
+| Render inline document images | image.nvim with Kitty and ImageMagick |
 | Restore working layouts | AutoSession |
 | Discover mappings | Which-key and Telescope |
 
@@ -346,6 +348,95 @@ Recognized primary keywords are `TODO`, `FIX`, `HACK`, `WARN`, `PERF`, `NOTE`, a
 
 The direct commands are `:TodoTelescope`, `:TodoQuickFix`, and `:TodoLocList`.
 
+## Markdown, Notes, And Images
+
+Markdown and R Markdown buffers have a dedicated authoring workflow. These mappings are buffer-local: they appear only in Markdown or R Markdown files, so use `<leader>?` after opening one to review them.
+
+Markdown prose wraps visually without changing the global no-wrap behavior. Spell checking is enabled locally with United States English, and the buffer keeps normal code-editor behavior outside Markdown files.
+
+### Preview, Links, Tables, And Tasks
+
+| Mapping | Action |
+| --- | --- |
+| `<leader>mp` | Toggle Markview's rendered preview and raw Markdown source. |
+| `<leader>mh` | Toggle Markview hybrid editing preview. |
+| `<leader>ms` | Toggle a synchronized side-by-side preview. |
+| `<leader>ml` | Follow the Markdown or wiki link under the cursor. |
+| `<leader>mn` / `<leader>mN` | Move to next / previous link. |
+| `<leader>mt` | Format the table under the cursor. |
+| `<leader>mc` | Toggle a Markdown task checkbox in Normal or Visual mode. |
+| `<leader>mf` / `<leader>mF` | Fold / unfold the current Markdown section. |
+| `<leader>mw` | Add the word under the cursor to the project spell dictionary. |
+| `<leader>mW` | Add every currently misspelled word in the document to the project spell dictionary. |
+| `<leader>ma` | Toggle Markdown format-on-save for this buffer. |
+| `<leader>md` | Run Markdown linting now. |
+| `<CR>` | Use Mkdnflow's smart Enter in Normal, Insert, or Visual mode. |
+
+Markview renders headings, lists, task boxes, links, code blocks, and other Markdown elements inside Neovim. Start with `<leader>mh` for a useful editing view: source remains editable while rendered information is visible. Use `<leader>mp` when you want a cleaner reading view, and `<leader>ms` when comparing source and preview side by side.
+
+Mkdnflow recognizes both standard Markdown links such as `[Guide](guide.md)` and wiki links such as `[[Guide]]`. Links resolve relative to the current file, so a note collection can remain portable inside a repository. Use `<leader>ml` to follow one rather than manually resolving paths.
+
+In Markdown, Mkdnflow also keeps useful defaults:
+
+| Context | Built-in behavior |
+| --- | --- |
+| Heading navigation | `]]` and `[[` move to next and previous headings. `][` and `[]` move among headings at the same level. |
+| Lists | `o` and `O` create a suitable list item below or above when used on a list. |
+| Tables in Insert mode | `<Tab>` and `<S-Tab>` move through cells; rows and columns extend automatically when needed. |
+| List indentation in Insert mode | `<C-t>` and `<C-d>` indent or dedent a list item. |
+| Spelling | `]s` and `[s` move to next and previous misspelling; `z=` shows replacement suggestions. |
+
+The configuration disables Mkdnflow defaults that would conflict with existing setup mappings, including its `<F2>` and `<leader>nn` mappings. Use the explicit `<leader>m...` mappings above instead.
+
+### Spell Dictionaries
+
+`<leader>mw` writes approved words to `<project-root>/.nvim/spell/en.utf-8.add`. Commit that file when the spelling is project terminology the whole team should share.
+
+If a project contains `.vscode/settings.json` with a `cSpell.words` list, the setup imports those words into a generated Neovim cache dictionary. It reads the existing VS Code vocabulary without modifying the VS Code file.
+
+Use the standard `z=` suggestion menu before adding a word. Add a word only when it is genuinely correct; otherwise, fix the spelling. `<leader>mW` is intentionally powerful, so inspect the document first and use it only when its unknown words are all valid project terms.
+
+### Formatting And Linting
+
+Markdown uses Prettier through Conform and markdownlint-cli2 through nvim-lint.
+
+| Behavior | What happens |
+| --- | --- |
+| Default save | Saves normally, then runs markdownlint-cli2 and publishes diagnostics. It does not format. |
+| `<leader>ma`, then save | Enables buffer-local Prettier formatting on each save until toggled off or the buffer closes. |
+| `<leader>md` | Runs markdownlint-cli2 immediately without saving. |
+| `<leader>lf` | Remains the general LSP-format mapping. It is not the Markdown Prettier shortcut. |
+
+Use `:ConformInfo` to see whether Prettier is available and what Conform would run. Use `[d`, `]d`, `<leader>ld`, or `<leader>fd` to inspect markdownlint diagnostics. A project `.markdownlint-cli2.*` configuration controls linting rules when present.
+
+### Inline Images
+
+`image.nvim` renders actual images inline instead of only showing a link or icon. It uses Kitty's graphics protocol and ImageMagick's `magick` command-line processor.
+
+Use normal Markdown image syntax:
+
+```markdown
+![A local diagram](./images/architecture.png)
+![A remote diagram](https://example.com/diagram.png)
+```
+
+Images render automatically in Markdown, R Markdown, and Quarto files. The same image support is enabled for Asciidoc, Typst, Neorg, HTML, and CSS buffers. Images remain visible in Insert mode, and the setup renders all supported images in the buffer rather than only the image under the cursor.
+
+Remote image downloads are enabled. Open documents from trusted repositories when they contain remote image URLs, because viewing the document can request those URLs. Large or unreachable images can also delay rendering.
+
+For inline images to appear, launch Neovim in Kitty or another terminal compatible with the configured Kitty backend, and ensure ImageMagick is installed. The current tool names are `kitty` and `magick`. Image rendering cannot be meaningfully tested in a headless Neovim process.
+
+| Command | When to use it |
+| --- | --- |
+| `:Markview toggle` | Toggle rendered Markdown preview. |
+| `:Markview hybridToggle` | Toggle hybrid Markdown preview. |
+| `:Markview splitToggle` | Toggle synchronized split preview. |
+| `:MkdnFollowLink` | Follow the link under the cursor. |
+| `:MkdnTableFormat` | Format the table under the cursor. |
+| `:MkdnToggleToDo` | Toggle a task checkbox. |
+| `:MkdnFoldSection` / `:MkdnUnfoldSection` | Fold or unfold a section. |
+| `:ConformInfo` | Inspect Markdown formatter availability and configuration. |
+
 ## UI And Editing Helpers
 
 | Mapping | Action |
@@ -437,6 +528,18 @@ This section contains every mapping configured in this Neovim setup. Mappings li
 | Todo | `<leader>ft` | Search todos with Telescope. |
 | Todo | `<leader>fT` | Todos to Quickfix. |
 | Todo | `<leader>fL` | Todos to location list. |
+| Markdown | `<leader>mp` | Toggle rendered preview. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<leader>mh` | Toggle hybrid preview. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<leader>ms` | Toggle split preview. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<leader>ml` | Follow link. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<leader>mn` / `<leader>mN` | Next / previous link. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<leader>mt` | Format table. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<leader>mc` | Toggle task in Normal or Visual mode. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<leader>mf` / `<leader>mF` | Fold / unfold section. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<leader>mw` / `<leader>mW` | Add current / all misspelled words to project dictionary. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<leader>ma` | Toggle format on save. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<leader>md` | Lint Markdown now. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<CR>` | Smart Enter in Normal, Insert, and Visual mode. Buffer-local to Markdown or R Markdown. |
 | UI | `<leader>ui` | Toggle indent guides. |
 | UI | `<leader>us` | Toggle indent scope. |
 | UI | `<leader>ua` | Toggle autopairs. |
@@ -588,6 +691,33 @@ The icon plugins are dependencies rather than interactive tools. If icons look l
 | `:InspectTree` | Explore the parsed syntax tree for the current buffer. |
 
 If a language has no parser or an out-of-date parser, syntax-aware features can be reduced even when a language server still works.
+
+### Markdown, Markview, Mkdnflow, Linting, And Images
+
+**Goal:** author a small Markdown document, preview it, navigate it, maintain its vocabulary, and validate it before sharing.
+
+1. In a scratch project, create `notes/demo.md` and add two headings, a short list, a task such as `- [ ] Review this guide`, a small table, and both a standard and wiki-style link.
+2. Open the file with Neovim. Confirm prose wraps naturally and misspelled words are highlighted.
+3. Use `<leader>mh` to enter hybrid preview. Compare the editable source with the rendered heading, task, table, and links.
+4. Use `<leader>mp` to see the full rendered mode, then use `<leader>ms` to try the synchronized side-by-side preview. Return to the mode that best fits the current task.
+5. Put the cursor on a link, use `<leader>ml`, then return with normal buffer navigation. Use `<leader>mn` and `<leader>mN` to practice link traversal.
+6. Place the cursor in the table and use `<leader>mt`. Enter Insert mode in its last cell, press `<Tab>`, and observe automatic table expansion.
+7. Use `<leader>mc` on the task item. Repeat in Visual mode after selecting multiple task lines with `V`.
+8. Intentionally add a valid project-specific word that spell checking does not know. Press `z=` first; if it is correct terminology, use `<leader>mw`. Confirm the word was added to `.nvim/spell/en.utf-8.add` at the project root.
+9. Run `<leader>md` to lint immediately. Inspect any diagnostics with `<leader>ld`, correct one, and run linting again.
+10. Toggle `<leader>ma`, save the file, and observe Prettier formatting on save. Toggle it off when you want to retain manual formatting control.
+11. Add a local image with `![Description](./image.png)` in a project that contains an image. In Kitty, confirm that it renders inline. Use a remote image only from a trusted source.
+
+| Command | What to practice |
+| --- | --- |
+| `:Markview hybridToggle` | Switch between source-first and rendered editing. |
+| `:Markview splitToggle` | Compare source and preview in a synchronized layout. |
+| `:MkdnFollowLink` | Follow the current link without using its mapping. |
+| `:MkdnTableFormat` | Repair table alignment after manual edits. |
+| `:MkdnToggleToDo` | Mark a task complete or incomplete. |
+| `:ConformInfo` | Confirm that Prettier is found before enabling format on save. |
+
+Use `<leader>mW` only as a cleanup pass on a reviewed document. It accepts every current misspelling as project vocabulary, which is convenient for a glossary but harmful if the document still contains real typos.
 
 ### Indent Blankline And Autopairs: Editing Feedback
 

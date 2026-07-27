@@ -219,8 +219,32 @@ return {
     ft = { "markdown", "rmd" },
     config = function()
       local lint = require("lint")
+      local markdownlint = require("lint.linters.markdownlint-cli2")
       lint.linters_by_ft.markdown = { "markdownlint-cli2" }
       lint.linters_by_ft.rmd = { "markdownlint-cli2" }
+      lint.linters["markdownlint-cli2"] = function()
+        local path = vim.api.nvim_buf_get_name(0)
+        local configs = vim.fs.find({
+          ".markdownlint-cli2.jsonc",
+          ".markdownlint-cli2.yaml",
+          ".markdownlint-cli2.cjs",
+          ".markdownlint-cli2.mjs",
+          ".markdownlint.jsonc",
+          ".markdownlint.json",
+          ".markdownlint.yaml",
+          ".markdownlint.yml",
+          ".markdownlint.cjs",
+          ".markdownlint.mjs",
+        }, { path = vim.fs.dirname(path), upward = true })
+
+        if #configs == 0 then
+          return vim.tbl_extend("force", markdownlint, {
+            args = { "--config", vim.fn.stdpath("config") .. "/markdownlint-default.json", "-" },
+          })
+        end
+
+        return markdownlint
+      end
 
       vim.api.nvim_create_autocmd("BufWritePost", {
         group = vim.api.nvim_create_augroup("collin-markdown-lint", { clear = true }),
