@@ -32,12 +32,17 @@ local function cspell_settings(buf)
   end
 end
 
-local function configure_spell(buf)
-  local personal_spellfile = vim.fn.stdpath("config") .. "/spell/en.utf-8.add"
-  local spellfiles = { personal_spellfile }
-  local settings = cspell_settings(buf)
+local function project_spellfile(buf)
+  local path = vim.api.nvim_buf_get_name(buf)
+  local directory = vim.fs.dirname(path)
+  local root = vim.fs.root(directory, { ".git" }) or directory
 
-  vim.fn.mkdir(vim.fs.dirname(personal_spellfile), "p")
+  return root .. "/.nvim/spell/en.utf-8.add"
+end
+
+local function configure_spell(buf)
+  local spellfiles = { project_spellfile(buf) }
+  local settings = cspell_settings(buf)
 
   if settings then
     local words = cspell_words(settings)
@@ -56,6 +61,11 @@ local function configure_spell(buf)
   vim.opt_local.spellfile = spellfiles
 end
 
+local function add_spelling_word(buf)
+  vim.fn.mkdir(vim.fs.dirname(project_spellfile(buf)), "p")
+  vim.cmd("normal! zg")
+end
+
 local function toggle_format_on_save(buf)
   vim.b[buf].markdown_format_on_save = not vim.b[buf].markdown_format_on_save
   vim.notify(
@@ -70,6 +80,7 @@ local function add_all_spelling_words(buf)
   local wrapscan = vim.o.wrapscan
   local added = {}
 
+  vim.fn.mkdir(vim.fs.dirname(project_spellfile(buf)), "p")
   vim.o.wrapscan = false
   vim.api.nvim_win_set_cursor(win, { 1, 0 })
 
@@ -87,7 +98,7 @@ local function add_all_spelling_words(buf)
 
   vim.o.wrapscan = wrapscan
   vim.api.nvim_win_set_cursor(win, cursor)
-  vim.notify("Added " .. vim.tbl_count(added) .. " words to the personal dictionary", vim.log.levels.INFO)
+  vim.notify("Added " .. vim.tbl_count(added) .. " words to the project dictionary", vim.log.levels.INFO)
 end
 
 local function configure_markdown_buffer(buf)
@@ -111,10 +122,12 @@ local function configure_markdown_buffer(buf)
   vim.keymap.set({ "n", "v" }, "<leader>mc", "<cmd>MkdnToggleToDo<CR>", vim.tbl_extend("force", opts, { desc = "Toggle task" }))
   vim.keymap.set("n", "<leader>mf", "<cmd>MkdnFoldSection<CR>", vim.tbl_extend("force", opts, { desc = "Fold section" }))
   vim.keymap.set("n", "<leader>mF", "<cmd>MkdnUnfoldSection<CR>", vim.tbl_extend("force", opts, { desc = "Unfold section" }))
-  vim.keymap.set("n", "<leader>mw", "zg", vim.tbl_extend("force", opts, { desc = "Add spelling word" }))
+  vim.keymap.set("n", "<leader>mw", function()
+    add_spelling_word(buf)
+  end, vim.tbl_extend("force", opts, { desc = "Add project spelling word" }))
   vim.keymap.set("n", "<leader>mW", function()
     add_all_spelling_words(buf)
-  end, vim.tbl_extend("force", opts, { desc = "Add all spelling words" }))
+  end, vim.tbl_extend("force", opts, { desc = "Add all project spelling words" }))
   vim.keymap.set("n", "<leader>ma", function()
     toggle_format_on_save(buf)
   end, vim.tbl_extend("force", opts, { desc = "Toggle format on save" }))
