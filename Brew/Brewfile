@@ -3,16 +3,32 @@ tap "theboredteam/boring-notch", "https://github.com/TheBoredTeam/homebrew-borin
 # Bourne-Again SHell, a UNIX command interpreter
 brew "bash"
 brew "zsh"
+# Faster grep replacement
+brew "ripgrep"
+# Command-line parser generator required by nvim-treesitter
+brew "tree-sitter-cli"
+# Image conversion used by image.nvim's Kitty graphics backend
+brew "imagemagick"
+# fd is a program to find entries in your filesystem. It is a simple, fast and user-friendly alternative to find.
+brew "fd"
 # Command-line tool to interact with exercism.io
 brew "exercism"
 # GitHub command-line tool
 brew "gh"
 # Distributed revision control system
 brew "git"
+# Simple terminal UI for Git
+brew "lazygit"
 # Fast, highly customisable system info script
 brew "neofetch"
 # Open-source, cross-platform JavaScript runtime environment
 brew "node"
+# Open-source programming language required by gopls and sqls
+brew "go"
+# Fast Python package and project manager required by uv tool entries below
+brew "uv"
+# .NET SDK required by the Roslyn C# language server
+brew "dotnet"
 # The AI coding agent built for the terminal.
 brew "anomalyco/tap/opencode", trusted: true
 # E-books management software
@@ -80,7 +96,12 @@ vscode "vscodevim.vim"
 vscode "waderyan.gitblame"
 vscode "yzhang.markdown-all-in-one"
 uv "specify-cli"
+# Open Git editors from LazyGit in the current Neovim instance.
+uv "neovim-remote", with: ["setuptools<81"]
 npm "corepack"
+# Markdown formatting and linting for Neovim
+npm "prettier"
+npm "markdownlint-cli2"
 
 # Fonts: 
 ## Maple Mono NF https://github.com/subframe7536/maple-font
