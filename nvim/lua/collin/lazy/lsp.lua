@@ -135,6 +135,14 @@ return {
         end
 
         vim.keymap.set("n", "<leader>lf", function()
+          if vim.bo[event.buf].filetype == "markdown" or vim.bo[event.buf].filetype == "rmd" then
+            local ok, conform = pcall(require, "conform")
+            if ok then
+              conform.format({ async = true, lsp_format = "never" })
+              return
+            end
+          end
+
           vim.lsp.buf.format({ async = true })
         end, { buffer = event.buf, desc = "Format buffer" })
       end,

@@ -7,6 +7,8 @@ brew "zsh"
 brew "ripgrep"
 # Command-line parser generator required by nvim-treesitter
 brew "tree-sitter-cli"
+# Image conversion used by image.nvim's Kitty graphics backend
+brew "imagemagick"
 # fd is a program to find entries in your filesystem. It is a simple, fast and user-friendly alternative to find.
 brew "fd"
 # Command-line tool to interact with exercism.io
@@ -97,6 +99,9 @@ uv "specify-cli"
 # Open Git editors from LazyGit in the current Neovim instance.
 uv "neovim-remote", with: ["setuptools<81"]
 npm "corepack"
+# Markdown formatting and linting for Neovim
+npm "prettier"
+npm "markdownlint-cli2"
 
 # Fonts: 
 ## Maple Mono NF https://github.com/subframe7536/maple-font
