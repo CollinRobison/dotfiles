@@ -74,6 +74,18 @@ local function toggle_format_on_save(buf)
   )
 end
 
+local function toggle_table_mode(buf)
+  vim.b[buf].markdown_table_mode = not vim.b[buf].markdown_table_mode
+  vim.wo.wrap = not vim.b[buf].markdown_table_mode
+  vim.wo.linebreak = not vim.b[buf].markdown_table_mode
+  vim.wo.breakindent = not vim.b[buf].markdown_table_mode
+  require("markview").commands.Render()
+  vim.notify(
+    "Markdown table mode " .. (vim.b[buf].markdown_table_mode and "enabled" or "disabled"),
+    vim.log.levels.INFO
+  )
+end
+
 local function add_all_spelling_words(buf)
   local win = vim.api.nvim_get_current_win()
   local cursor = vim.api.nvim_win_get_cursor(win)
@@ -110,6 +122,9 @@ local function configure_markdown_buffer(buf)
   if vim.b[buf].markdown_format_on_save == nil then
     vim.b[buf].markdown_format_on_save = false
   end
+  if vim.b[buf].markdown_table_mode == nil then
+    vim.b[buf].markdown_table_mode = false
+  end
 
   local opts = { buffer = buf }
   vim.keymap.set("n", "<leader>mp", "<cmd>Markview toggle<CR>", vim.tbl_extend("force", opts, { desc = "Toggle preview" }))
@@ -131,6 +146,9 @@ local function configure_markdown_buffer(buf)
   vim.keymap.set("n", "<leader>ma", function()
     toggle_format_on_save(buf)
   end, vim.tbl_extend("force", opts, { desc = "Toggle format on save" }))
+  vim.keymap.set("n", "<leader>mT", function()
+    toggle_table_mode(buf)
+  end, vim.tbl_extend("force", opts, { desc = "Toggle table mode" }))
   vim.keymap.set("n", "<leader>md", function()
     require("lint").try_lint()
   end, vim.tbl_extend("force", opts, { desc = "Lint Markdown" }))

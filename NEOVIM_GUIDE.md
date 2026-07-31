@@ -369,10 +369,13 @@ Markdown prose wraps visually without changing the global no-wrap behavior. Spel
 | `<leader>mw` | Add the word under the cursor to the project spell dictionary. |
 | `<leader>mW` | Add every currently misspelled word in the document to the project spell dictionary. |
 | `<leader>ma` | Toggle Markdown format-on-save for this buffer. |
+| `<leader>mT` | Toggle table mode: disable or restore prose wrapping in the current window. |
 | `<leader>md` | Run Markdown linting now. |
 | `<CR>` | Use Mkdnflow's smart Enter in Normal, Insert, or Visual mode. |
 
 Markview renders headings, lists, task boxes, links, code blocks, and other Markdown elements inside Neovim. Start with `<leader>mh` for a useful editing view: source remains editable while rendered information is visible. Use `<leader>mp` when you want a cleaner reading view, and `<leader>ms` when comparing source and preview side by side.
+
+Markview already uses rounded table borders. Wide tables can still render only partially while prose wrapping is enabled, because rendering a full grid into wrapped lines would break its layout. Use `<leader>mt` to align a table's source, then use `<leader>mT` to enter table mode. Table mode disables wrapping, line breaking, and break indentation in the current Markdown window and refreshes Markview so wide tables render as complete grids. Press `<leader>mT` again to restore comfortable wrapped prose.
 
 Mkdnflow recognizes both standard Markdown links such as `[Guide](guide.md)` and wiki links such as `[[Guide]]`. Links resolve relative to the current file, so a note collection can remain portable inside a repository. Use `<leader>ml` to follow one rather than manually resolving paths.
 
@@ -538,6 +541,7 @@ This section contains every mapping configured in this Neovim setup. Mappings li
 | Markdown | `<leader>mf` / `<leader>mF` | Fold / unfold section. Buffer-local to Markdown or R Markdown. |
 | Markdown | `<leader>mw` / `<leader>mW` | Add current / all misspelled words to project dictionary. Buffer-local to Markdown or R Markdown. |
 | Markdown | `<leader>ma` | Toggle format on save. Buffer-local to Markdown or R Markdown. |
+| Markdown | `<leader>mT` | Toggle no-wrap table mode. Buffer-local to Markdown or R Markdown. |
 | Markdown | `<leader>md` | Lint Markdown now. Buffer-local to Markdown or R Markdown. |
 | Markdown | `<CR>` | Smart Enter in Normal, Insert, and Visual mode. Buffer-local to Markdown or R Markdown. |
 | UI | `<leader>ui` | Toggle indent guides. |
@@ -702,11 +706,12 @@ If a language has no parser or an out-of-date parser, syntax-aware features can 
 4. Use `<leader>mp` to see the full rendered mode, then use `<leader>ms` to try the synchronized side-by-side preview. Return to the mode that best fits the current task.
 5. Put the cursor on a link, use `<leader>ml`, then return with normal buffer navigation. Use `<leader>mn` and `<leader>mN` to practice link traversal.
 6. Place the cursor in the table and use `<leader>mt`. Enter Insert mode in its last cell, press `<Tab>`, and observe automatic table expansion.
-7. Use `<leader>mc` on the task item. Repeat in Visual mode after selecting multiple task lines with `V`.
-8. Intentionally add a valid project-specific word that spell checking does not know. Press `z=` first; if it is correct terminology, use `<leader>mw`. Confirm the word was added to `.nvim/spell/en.utf-8.add` at the project root.
-9. Run `<leader>md` to lint immediately. Inspect any diagnostics with `<leader>ld`, correct one, and run linting again.
-10. Toggle `<leader>ma`, save the file, and observe Prettier formatting on save. Toggle it off when you want to retain manual formatting control.
-11. Add a local image with `![Description](./image.png)` in a project that contains an image. In Kitty, confirm that it renders inline. Use a remote image only from a trusted source.
+7. If the table is wider than the window, use `<leader>mT` to disable wrapping and render the complete grid. Press it again after reviewing the table to restore wrapped prose.
+8. Use `<leader>mc` on the task item. Repeat in Visual mode after selecting multiple task lines with `V`.
+9. Intentionally add a valid project-specific word that spell checking does not know. Press `z=` first; if it is correct terminology, use `<leader>mw`. Confirm the word was added to `.nvim/spell/en.utf-8.add` at the project root.
+10. Run `<leader>md` to lint immediately. Inspect any diagnostics with `<leader>ld`, correct one, and run linting again.
+11. Toggle `<leader>ma`, save the file, and observe Prettier formatting on save. Toggle it off when you want to retain manual formatting control.
+12. Add a local image with `![Description](./image.png)` in a project that contains an image. In Kitty, confirm that it renders inline. Use a remote image only from a trusted source.
 
 | Command | What to practice |
 | --- | --- |
