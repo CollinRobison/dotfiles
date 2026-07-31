@@ -31,6 +31,7 @@ brew "uv"
 brew "dotnet"
 # The AI coding agent built for the terminal.
 brew "anomalyco/tap/opencode", trusted: true
+brew  "can1357/tap/omp", trusted: true 
 # E-books management software
 cask "calibre"
 # Multimedia player
