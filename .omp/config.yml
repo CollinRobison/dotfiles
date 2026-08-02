@@ -1,7 +1,7 @@
 symbolPreset: nerd
 theme: 
-  dark: titanium
+  dark: dark-lavender
   light: light
 setupVersion: 1
 modelRoles: 
-  default: openai-codex/gpt-5.4-mini
+  default: openai-codex/gpt-5.6-terra:high
