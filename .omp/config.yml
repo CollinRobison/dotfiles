@@ -5,3 +5,35 @@ theme:
 setupVersion: 1
 modelRoles: 
   default: openai-codex/gpt-5.6-terra:high
+tui: 
+  textSizing: true
+  codexResetFireworks: true
+  imeSafeCursor: false
+display: 
+  shimmer: classic
+  showTokenUsage: true
+  cacheMissMarker: true
+steeringMode: one-at-a-time
+autolearn: 
+  enabled: true
+  autoContinue: false
+memory: 
+  backend: local
+lsp: 
+  formatOnWrite: true
+  diagnosticsOnEdit: true
+readLineNumbers: true
+generate_image: 
+  enabled: true
+computer: 
+  enabled: true
+checkpoint: 
+  enabled: true
+github: 
+  enabled: true
+security: 
+  enabled: true
+providers: 
+  memoryModel: online
+dev: 
+  autoqaConsent: granted
