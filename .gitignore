@@ -9,6 +9,9 @@ $RECYCLE.BIN/
 .Trashes/
 ._*
 
+# Pi runtime state
+.pi/*.local.*
+
 # Editor / temp files
 *~
 *.swp
@@ -38,6 +41,13 @@ id_rsa
 id_ed25519
 .netrc
 .git-credentials
+
+# Pi credentials, sessions, caches, and local overrides
+.pi/auth.json
+.pi/sessions/
+.pi/npm/
+.pi/git/
+.pi/models-store.json
 
 # Oh My Pi credentials and local overrides
 .omp/models.yml
