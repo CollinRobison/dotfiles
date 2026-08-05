@@ -309,6 +309,7 @@ function buildInfo(theme: WelcomeTheme, data: WelcomeData, width: number): strin
       `${theme.fg("accent", "Alt+Enter")}  queue a follow-up while running`,
       `${theme.fg("accent", "Alt+↑")}  restore queued messages`,
       `${theme.fg("accent", "Ctrl+T")}  collapse or expand thinking blocks`,
+      `${theme.fg("accent", "Ctrl+Shift+A")}  switch agents`,
       `${theme.fg("accent", "Ctrl+X")}  copy the last assistant message`,
       `${theme.fg("dim", "/hotkeys")}  show the complete shortcut list`,
       `${theme.fg("dim", "Any key")}  continue`,

@@ -15,7 +15,8 @@
   },
   "externalEditor": "nvim",
   "packages": [
-    "npm:pi-powerline-footer"
+    "npm:pi-powerline-footer",
+    "npm:pi-permission-system@0.8.0"
   ],
   "collin-powerline-welcome": {
     "show": true

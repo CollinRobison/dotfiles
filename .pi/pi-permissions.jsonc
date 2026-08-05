@@ -1,0 +1,11 @@
+{
+  // Keep the default Pi agent's current behavior: no additional permission prompts.
+  // Restrictive policies are applied by the cautious and reviewer agent files.
+  "defaultPolicy": {
+    "tools": "allow",
+    "bash": "allow",
+    "mcp": "allow",
+    "skills": "allow",
+    "special": "allow"
+  }
+}
