@@ -45,6 +45,7 @@ link_item() {
 
 link_item "$source_root/AGENTS.md" "$target_root/AGENTS.md"
 link_item "$source_root/settings.json" "$target_root/settings.json"
+link_item "$source_root/pi-alerts.json" "$target_root/pi-alerts.json"
 link_item "$source_root/keybindings.json" "$target_root/keybindings.json"
 link_item "$source_root/prompts" "$target_root/prompts"
 link_item "$source_root/skills" "$target_root/skills"
@@ -52,6 +53,19 @@ link_item "$source_root/extensions" "$target_root/extensions"
 link_item "$source_root/themes" "$target_root/themes"
 link_item "$source_root/agents" "$target_root/agents"
 link_item "$source_root/pi-permissions.jsonc" "$target_root/pi-permissions.jsonc"
+
+if [[ "$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null 2>&1 && ! command -v alerter >/dev/null 2>&1; then
+  install_alerter="n"
+  if [[ "${PI_DOTFILES_YES:-}" == "1" ]]; then
+    install_alerter="y"
+  else
+    printf 'Install macOS alert backend (alerter) with Homebrew? [y/N] '
+    read -r install_alerter
+  fi
+  if [[ "$install_alerter" =~ ^[Yy]$ ]]; then
+    brew install vjeantet/tap/alerter || echo "Warning: alerter installation failed; Pi alerts will use a fallback backend." >&2
+  fi
+fi
 
 echo "Pi dotfiles installed. Restart Pi or run /reload."
 echo "Available agents: /agent normal, /agent cautious, /agent reviewer"

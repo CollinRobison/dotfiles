@@ -14,6 +14,7 @@ The installer links these files into `~/.pi/agent/` and asks before replacing ex
 
 - `AGENTS.md`
 - `settings.json`
+- `pi-alerts.json`
 - `keybindings.json`
 - `prompts/`
 - `skills/`
@@ -34,6 +35,8 @@ The global agents are version-controlled here and linked to `~/.pi/agent/agents`
 - `/agents` — list available agents
 
 Permission prompts can be temporarily auto-approved for the current session with `/allow-all`. Use `/ask-all` to restore prompts. This does not persist the setting.
+
+Pi alerts are controlled by `pi-alerts.json` and are enabled explicitly there. Use `/pi-alerts status` or `/pi-alerts test` to inspect and test the notification backend.
 
 The third-party `pi-permission-system` package is pinned in `settings.json`; Pi installs missing packages from that global settings file.
 

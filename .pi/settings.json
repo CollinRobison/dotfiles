@@ -27,5 +27,5 @@
     "placement": "above",
     "welcome": false
   },
-  "hideThinkingBlock": false
+  "hideThinkingBlock": true
 }

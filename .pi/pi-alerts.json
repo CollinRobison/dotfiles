@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "focus": {
+    "suppressWhenFocused": true,
+    "failOpen": true
+  },
+  "events": {
+    "complete": { "notification": true, "sound": true, "bell": false, "soundName": "Glass" },
+    "error": { "notification": true, "sound": true, "bell": false, "soundName": "Basso" },
+    "permission": { "notification": true, "sound": true, "bell": false, "soundName": "Sosumi" },
+    "question": { "notification": true, "sound": true, "bell": false, "soundName": "Pop" }
+  },
+  "notification": {
+    "clickToFocus": true,
+    "timeoutSeconds": 0
+  },
+  "questionTools": ["question", "ask_user_question", "questionnaire"],
+  "debug": false
+}
