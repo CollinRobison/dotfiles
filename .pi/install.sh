@@ -55,6 +55,9 @@ link_item "$source_root/themes" "$target_root/themes"
 link_item "$source_root/agents" "$target_root/agents"
 link_item "$source_root/pi-permissions.jsonc" "$target_root/pi-permissions.jsonc"
 
+# Ensure the globally linked Playwright skill has its npm package and browser.
+"$source_root/skills/playwright-browser/scripts/install.sh"
+
 if [[ "$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null 2>&1 && ! command -v alerter >/dev/null 2>&1; then
   install_alerter="n"
   if [[ "${PI_DOTFILES_YES:-}" == "1" ]]; then
