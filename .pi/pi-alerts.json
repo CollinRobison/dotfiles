@@ -14,6 +14,9 @@
     "clickToFocus": true,
     "timeoutSeconds": 0
   },
+  "tabTitle": {
+    "enabled": true
+  },
   "questionTools": ["question", "ask_user_question", "questionnaire"],
   "debug": false
 }

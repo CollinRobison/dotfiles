@@ -3,7 +3,7 @@ import { Type } from "typebox";
 import { basename } from "node:path";
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { readlinkSync, writeFileSync } from "node:fs";
-import { loadConfig, type AlertType } from "./config.ts";
+import { loadConfig, type AlertType, type AlertsConfig } from "./config.ts";
 
 const PERMISSION_CHANNEL = "pi-permission-system:permission-request";
 const QUESTION_TOOLS = new Set(["question", "ask_user_question", "questionnaire"]);
@@ -272,6 +272,21 @@ function shouldRunInMode(ctx: ExtensionContext): boolean {
 	return ctx.mode !== "print" && ctx.mode !== "json";
 }
 
+type TabTitleState = "idle" | "working" | AlertType;
+
+function updateTabTitle(
+	ctx: ExtensionContext,
+	state: TabTitleState,
+	sessionName: string | undefined,
+	config: AlertsConfig,
+): void {
+	if (!shouldRunInMode(ctx) || !ctx.hasUI || !config.enabled || !config.tabTitle.enabled) return;
+
+	const icon = state === "idle" ? "•" : state === "working" ? "⏳" : eventCopy(state).emoji;
+	const session = sessionName ? ` · ${sessionName}` : "";
+	ctx.ui.setTitle(`${icon} Pi · ${basename(ctx.cwd)}${session}`);
+}
+
 export default function piAlerts(pi: ExtensionAPI): void {
 	pi.registerTool({
 		name: "question",
@@ -325,7 +340,9 @@ export default function piAlerts(pi: ExtensionAPI): void {
 	const emit = (type: AlertType, ctx: ExtensionContext, force = false): void => {
 		if (!shouldRunInMode(ctx)) return;
 		const config = loadConfig(ctx.cwd, ctx.isProjectTrusted());
-		if (!force && (!config.enabled || !config.events[type].notification && !config.events[type].sound && !config.events[type].bell)) return;
+		if (!force && !config.enabled) return;
+		updateTabTitle(ctx, type, pi.getSessionName(), config);
+		if (!force && !config.events[type].notification && !config.events[type].sound && !config.events[type].bell) return;
 		const copy = eventCopy(type);
 		const title = `${copy.emoji} Pi · ${basename(ctx.cwd)}${pi.getSessionName() ? ` · ${pi.getSessionName()}` : ""}`;
 		const eventConfig = config.events[type];
@@ -374,12 +391,16 @@ export default function piAlerts(pi: ExtensionAPI): void {
 	pi.on("session_start", (_event, ctx) => {
 		activeContext = ctx;
 		terminalError = false;
+		updateTabTitle(ctx, "idle", pi.getSessionName(), loadConfig(ctx.cwd, ctx.isProjectTrusted()));
 	});
 	pi.on("session_shutdown", () => {
 		activeContext = undefined;
 		if (permissionTimer) clearTimeout(permissionTimer);
 	});
-	pi.on("agent_start", () => { terminalError = false; });
+	pi.on("agent_start", (_event, ctx) => {
+		terminalError = false;
+		updateTabTitle(ctx, "working", pi.getSessionName(), loadConfig(ctx.cwd, ctx.isProjectTrusted()));
+	});
 	pi.on("agent_end", (event) => { if (isAgentError(event)) terminalError = true; });
 	pi.on("agent_settled", (_event, ctx) => {
 		emit(terminalError ? "error" : "complete", ctx);
@@ -389,8 +410,9 @@ export default function piAlerts(pi: ExtensionAPI): void {
 		const config = loadConfig(ctx.cwd, ctx.isProjectTrusted());
 		if (QUESTION_TOOLS.has(event.toolName.toLowerCase()) || config.questionTools.includes(event.toolName)) emit("question", ctx);
 	});
-	pi.events.on(PERMISSION_CHANNEL, (payload: PermissionEvent) => {
-		if (payload?.state !== "waiting" || !activeContext) return;
+	pi.events.on(PERMISSION_CHANNEL, (payload) => {
+		const permission = payload as PermissionEvent | undefined;
+		if (permission?.state !== "waiting" || !activeContext) return;
 		permissionContext = activeContext;
 		if (permissionTimer) clearTimeout(permissionTimer);
 		permissionTimer = setTimeout(() => {

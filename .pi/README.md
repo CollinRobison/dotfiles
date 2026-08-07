@@ -37,7 +37,7 @@ The global agents are version-controlled here and linked to `~/.pi/agent/agents`
 
 Permission prompts can be temporarily auto-approved for the current session with `/allow-all`. Use `/ask-all` to restore prompts. This does not persist the setting.
 
-Pi alerts are controlled by `pi-alerts.json` and are enabled explicitly there. Use `/pi-alerts status` or `/pi-alerts test` to inspect and test the notification backend.
+Pi alerts are controlled by `pi-alerts.json` and are enabled explicitly there. Completion and error states also update the terminal tab title (`⏳`, `✅`, or `❌`) so the tab remains visibly marked until the next task. Use `/pi-alerts status` or `/pi-alerts test` to inspect and test the notification backend.
 
 The third-party `pi-permission-system` package is pinned in `settings.json`; Pi installs missing packages from that global settings file.
 

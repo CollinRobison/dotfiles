@@ -5,12 +5,14 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 export type AlertType = "complete" | "error" | "permission" | "question";
 
 type EventConfig = { notification: boolean; sound: boolean; bell: boolean; soundName: string };
+type TabTitleConfig = { enabled: boolean };
 
 export type AlertsConfig = {
 	enabled: boolean;
 	focus: { suppressWhenFocused: boolean; failOpen: boolean };
 	events: Record<AlertType, EventConfig>;
 	notification: { clickToFocus: boolean; timeoutSeconds: number };
+	tabTitle: TabTitleConfig;
 	questionTools: string[];
 	debug: boolean;
 };
@@ -25,6 +27,7 @@ const DEFAULT_CONFIG: AlertsConfig = {
 		question: { notification: true, sound: true, bell: false, soundName: "Pop" },
 	},
 	notification: { clickToFocus: true, timeoutSeconds: 0 },
+	tabTitle: { enabled: true },
 	questionTools: ["question", "ask_user_question", "questionnaire"],
 	debug: false,
 };
@@ -62,6 +65,8 @@ function merge(base: AlertsConfig, ...sources: Record<string, unknown>[]): Alert
 		if (typeof notification.timeoutSeconds === "number" && Number.isFinite(notification.timeoutSeconds)) {
 			result.notification.timeoutSeconds = Math.max(0, Math.min(60, Math.round(notification.timeoutSeconds)));
 		}
+		const tabTitle = record(source.tabTitle);
+		if (typeof tabTitle.enabled === "boolean") result.tabTitle.enabled = tabTitle.enabled;
 		if (Array.isArray(source.questionTools)) {
 			result.questionTools = source.questionTools.filter((value): value is string => typeof value === "string");
 		}
