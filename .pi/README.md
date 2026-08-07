@@ -76,6 +76,10 @@ Use `/dirs` to inspect the active external directories and `/remove-dir` to revo
 one. External `AGENTS.md`/`CLAUDE.md` files are still instructions, so only add
 projects you trust.
 
+## Model pricing
+
+Use `/models-cost` for a separate picker of all authenticated models. It displays Pi's current catalog rates per million tokens, cache-read/cache-write rates, context limits, and long-context pricing tiers. Values are API-equivalent estimates; subscription/OAuth billing may differ. Use `/models-cost scoped` to show only `enabledModels`. The command refreshes Pi's model catalog in the background and does not modify the built-in `/model` picker.
+
 ## Security
 
 Review extensions and skills before using them. Never commit credentials, session files, auth files, or generated package caches.
