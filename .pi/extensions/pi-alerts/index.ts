@@ -10,6 +10,7 @@ const QUESTION_TOOLS = new Set(["question", "ask_user_question", "questionnaire"
 const MAC_APPS: Record<string, { name: string; bundle: string }> = {
 	ghostty: { name: "Ghostty", bundle: "com.mitchellh.ghostty" },
 	"iterm.app": { name: "iTerm2", bundle: "com.googlecode.iterm2" },
+	iterm2: { name: "iTerm2", bundle: "com.googlecode.iterm2" },
 	apple_terminal: { name: "Terminal", bundle: "com.apple.Terminal" },
 	terminal: { name: "Terminal", bundle: "com.apple.Terminal" },
 	wezterm: { name: "WezTerm", bundle: "com.github.wez.wezterm" },
@@ -160,12 +161,27 @@ function detectFocus(): FocusInfo {
 	return { focused: false, reliable: false };
 }
 
+function macParentApp(): { bundle?: string } {
+	let pid = process.ppid;
+	const visited = new Set<number>();
+	for (let depth = 0; depth < 12 && pid > 1 && !visited.has(pid); depth++) {
+		visited.add(pid);
+		const processInfo = run("ps", ["-p", String(pid), "-o", "ppid=,comm="], 500);
+		const match = processInfo?.match(/^\s*(\d+)\s+(.+?)\s*$/);
+		if (!match) break;
+		const app = MAC_APPS[normalize(basename(match[2]))];
+		if (app) return app;
+		pid = Number(match[1]);
+	}
+	return {};
+}
+
 function currentMacApp(): { bundle?: string } {
 	const term = normalize(process.env.TERM_PROGRAM ?? "");
 	if (term === "iterm" || term === "iterm2") return MAC_APPS["iterm.app"];
 	if (term === "apple_terminal") return MAC_APPS.apple_terminal;
 	if (term === "vscode") return MAC_APPS.vscode;
-	return MAC_APPS[term] ?? {};
+	return MAC_APPS[term] ?? macParentApp();
 }
 
 function escapeAppleScript(value: string): string {
@@ -186,13 +202,37 @@ function spawnCommand(command: string, args: string[]): boolean {
 	}
 }
 
+function spawnAlerter(args: string[], activateBundle?: string): boolean {
+	if (!activateBundle) return spawnCommand("alerter", args);
+	try {
+		const child = spawn("alerter", [...args, "--json"], {
+			stdio: ["ignore", "pipe", "ignore"], detached: true,
+		});
+		let output = "";
+		child.stdout?.setEncoding("utf8");
+		child.stdout?.on("data", (chunk: string) => { output += chunk; });
+		child.on("close", () => {
+			try {
+				const result = JSON.parse(output) as { activationType?: string };
+				if (["contentsClicked", "actionClicked", "activated"].includes(result.activationType ?? "")) {
+					spawnCommand("open", ["-b", activateBundle]);
+				}
+			} catch { /* best effort */ }
+		});
+		(child.stdout as unknown as { unref?: () => void } | null)?.unref?.();
+		child.unref();
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 function sendMac(title: string, subtitle: string, body: string, group: string, sound: boolean, soundName: string, clickToFocus: boolean, timeoutSeconds: number): boolean {
 	const app = currentMacApp();
 	if (commandExists("alerter")) {
 		const args = ["--title", title, "--subtitle", subtitle, "--message", body, "--group", group, "--timeout", String(timeoutSeconds)];
-		if (clickToFocus && app.bundle) args.push("--sender", app.bundle);
 		if (sound) args.push("--sound", soundName);
-		return spawnCommand("alerter", args);
+		return spawnAlerter(args, clickToFocus ? app.bundle : undefined);
 	}
 	if (commandExists("terminal-notifier")) {
 		const args = ["-title", title, "-subtitle", subtitle, "-message", body, "-group", group];
