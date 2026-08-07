@@ -60,6 +60,22 @@ and run the `/lsp install` commands printed by the script once to register the s
 binaries in Pi's LSP lockfile. The powerline shows the configured servers detected
 for the current project; use `/lsp-project` to refresh it manually.
 
+## External project context
+
+`pi-add-dir` and the local `external-dir-autocomplete` extension support working
+across projects without changing Pi's working directory. Add a trusted project
+with `/add-dir /path/to/project`; its files then appear in `@` completion and are
+inserted as absolute file attachments. Only directories explicitly added to the
+current session are searched. The autocomplete extension reads paths only, skips
+symlinks, `.git`, `node_modules`, and Pi runtime caches, and does not execute
+external-project code. This setup also disables `pi-add-dir`'s automatic
+LLM-callable `add_directory` tool; directories must be added explicitly with
+`/add-dir`.
+
+Use `/dirs` to inspect the active external directories and `/remove-dir` to revoke
+one. External `AGENTS.md`/`CLAUDE.md` files are still instructions, so only add
+projects you trust.
+
 ## Security
 
 Review extensions and skills before using them. Never commit credentials, session files, auth files, or generated package caches.
