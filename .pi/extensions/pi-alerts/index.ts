@@ -1,5 +1,4 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
 import { basename } from "node:path";
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { readlinkSync, writeFileSync } from "node:fs";
@@ -288,50 +287,6 @@ function updateTabTitle(
 }
 
 export default function piAlerts(pi: ExtensionAPI): void {
-	pi.registerTool({
-		name: "question",
-		label: "Question",
-		description: "Ask the user to choose one option.",
-		parameters: Type.Object({
-			question: Type.String({ description: "The question to ask" }),
-			options: Type.Array(Type.Object({
-				label: Type.String({ description: "Option label" }),
-				description: Type.Optional(Type.String({ description: "Optional option description" })),
-			})),
-		}),
-		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-			if (!ctx.hasUI) return { content: [{ type: "text", text: "Question unavailable in noninteractive mode." }], details: { answer: null } };
-			const answer = await ctx.ui.select(params.question, params.options.map((option) => option.label));
-			return {
-				content: [{ type: "text", text: answer ? `User selected: ${answer}` : "User cancelled the question." }],
-				details: { answer: answer ?? null, question: params.question },
-			};
-		},
-	});
-
-	pi.registerTool({
-		name: "questionnaire",
-		label: "Questionnaire",
-		description: "Ask the user one or more questions sequentially.",
-		parameters: Type.Object({
-			questions: Type.Array(Type.Object({
-				id: Type.String({ description: "Question identifier" }),
-				prompt: Type.String({ description: "Question text" }),
-				options: Type.Array(Type.String({ description: "Option label" })),
-			})),
-		}),
-		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-			if (!ctx.hasUI) return { content: [{ type: "text", text: "Questionnaire unavailable in noninteractive mode." }], details: { answers: {} } };
-			const answers: Record<string, string> = {};
-			for (const question of params.questions) {
-				const answer = await ctx.ui.select(question.prompt, question.options);
-				if (!answer) return { content: [{ type: "text", text: "User cancelled the questionnaire." }], details: { answers } };
-				answers[question.id] = answer;
-			}
-			return { content: [{ type: "text", text: JSON.stringify(answers) }], details: { answers } };
-		},
-	});
-
 	let activeContext: ExtensionContext | undefined;
 	let terminalError = false;
 	let permissionTimer: ReturnType<typeof setTimeout> | undefined;

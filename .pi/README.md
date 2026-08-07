@@ -80,6 +80,10 @@ projects you trust.
 
 Use `/models-cost` for a separate picker of all authenticated models. It displays Pi's current catalog rates per million tokens, cache-read/cache-write rates, context limits, and long-context pricing tiers. Values are API-equivalent estimates; subscription/OAuth billing may differ. Use `/models-cost scoped` to show only `enabledModels`. The command refreshes Pi's model catalog in the background and does not modify the built-in `/model` picker.
 
+## Questionnaires
+
+The separate `extensions/pi-questionnaire.ts` extension provides the LLM-callable `question` and `questionnaire` tools. `questionnaire` supports revisitable multi-question tabs, explicit `multiSelect` checkbox questions, `Other / write your own`, and a final review step. `pi-alerts` only supplies notifications while input is needed.
+
 ## Security
 
 Review extensions and skills before using them. Never commit credentials, session files, auth files, or generated package caches.
