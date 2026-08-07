@@ -16,7 +16,8 @@
   "externalEditor": "nvim",
   "packages": [
     "npm:pi-powerline-footer",
-    "npm:pi-permission-system@0.8.0"
+    "npm:pi-permission-system@0.8.0",
+    "npm:pi-lsp-adapter@0.1.3"
   ],
   "collin-powerline-welcome": {
     "show": true
@@ -25,7 +26,17 @@
     "preset": "default",
     "separator": "ascii",
     "placement": "above",
-    "welcome": false
+    "welcome": false,
+    "customItems": [
+      {
+        "id": "project-lsp",
+        "statusKey": "project-lsp",
+        "position": "secondary",
+        "prefix": "LSP",
+        "color": "accent",
+        "hideWhenMissing": false
+      }
+    ]
   },
   "hideThinkingBlock": true
 }

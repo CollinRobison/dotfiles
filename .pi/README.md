@@ -15,6 +15,7 @@ The installer links these files into `~/.pi/agent/` and asks before replacing ex
 - `AGENTS.md`
 - `settings.json`
 - `pi-alerts.json`
+- `lsp-global.json` (linked as `lsp.json`)
 - `keybindings.json`
 - `prompts/`
 - `skills/`
@@ -39,6 +40,25 @@ Permission prompts can be temporarily auto-approved for the current session with
 Pi alerts are controlled by `pi-alerts.json` and are enabled explicitly there. Use `/pi-alerts status` or `/pi-alerts test` to inspect and test the notification backend.
 
 The third-party `pi-permission-system` package is pinned in `settings.json`; Pi installs missing packages from that global settings file.
+
+## LSP setup
+
+`lsp-global.json` configures Pi to reuse language servers installed by Mason.nvim. The
+Zsh configuration adds Mason's bin directory to `PATH` when it exists; set `MASON_BIN`
+to override the default path.
+
+On a new machine:
+
+```bash
+./.pi/install.sh
+./.pi/setup-lsp.sh
+```
+
+If the check reports missing servers, open Neovim once so its `ensure_installed`
+configuration can install them, then run the setup script again. Afterward, start Pi
+and run the `/lsp install` commands printed by the script once to register the system
+binaries in Pi's LSP lockfile. The powerline shows the configured servers detected
+for the current project; use `/lsp-project` to refresh it manually.
 
 ## Security
 

@@ -46,6 +46,7 @@ link_item() {
 link_item "$source_root/AGENTS.md" "$target_root/AGENTS.md"
 link_item "$source_root/settings.json" "$target_root/settings.json"
 link_item "$source_root/pi-alerts.json" "$target_root/pi-alerts.json"
+link_item "$source_root/lsp-global.json" "$target_root/lsp.json"
 link_item "$source_root/keybindings.json" "$target_root/keybindings.json"
 link_item "$source_root/prompts" "$target_root/prompts"
 link_item "$source_root/skills" "$target_root/skills"

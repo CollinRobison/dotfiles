@@ -1,6 +1,12 @@
     # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
+# Expose Mason-managed language servers to Neovim and Pi.
+mason_bin="${MASON_BIN:-$HOME/.local/share/nvim/mason/bin}"
+if [[ -d "$mason_bin" ]]; then
+  export PATH="$mason_bin:$PATH"
+fi
+
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 

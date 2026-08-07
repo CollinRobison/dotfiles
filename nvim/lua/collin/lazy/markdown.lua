@@ -41,7 +41,10 @@ local function project_spellfile(buf)
 end
 
 local function configure_spell(buf)
-  local spellfiles = { project_spellfile(buf) }
+  local project_file = project_spellfile(buf)
+  vim.fn.mkdir(vim.fs.dirname(project_file), "p")
+
+  local spellfiles = { project_file }
   local settings = cspell_settings(buf)
 
   if settings then

@@ -1,0 +1,51 @@
+{
+  "installMode": "prompt",
+  "warmup": true,
+  "servers": {
+    "vtsls": {
+      "install": {
+        "type": "system",
+        "command": ["vtsls", "--stdio"]
+      }
+    },
+    "pyright": {
+      "install": {
+        "type": "system",
+        "command": [
+          "basedpyright-langserver",
+          "--stdio"
+        ]
+      }
+    },
+    "gopls": {
+      "install": {
+        "type": "system",
+        "command": ["gopls"]
+      }
+    },
+    "rust-analyzer": {
+      "install": {
+        "type": "system",
+        "command": ["rust-analyzer"]
+      }
+    },
+    "yamlls": {
+      "install": {
+        "type": "system",
+        "command": [
+          "yaml-language-server",
+          "--stdio"
+        ]
+      }
+    },
+    "jsonls": {
+      "install": {
+        "type": "system",
+        "command": [
+          "vscode-json-language-server",
+          "--stdio"
+        ]
+      }
+    }
+  }
+}
