@@ -168,7 +168,9 @@ Use `/models-cost` for a separate picker of all authenticated models. It display
 
 ## Questionnaires
 
-The separate `extensions/pi-questionnaire.ts` extension provides the LLM-callable `question` and `questionnaire` tools. `questionnaire` supports revisitable multi-question tabs, explicit `multiSelect` checkbox questions, `Other / write your own`, and a final review step. `pi-alerts` only supplies notifications while input is needed.
+The separate `extensions/pi-questionnaire.ts` extension provides the LLM-callable `question` and `questionnaire` tools. `questionnaire` supports revisitable multi-question tabs, explicit `multiSelect` checkbox questions, `Other / write your own`, and a final review step.
+
+Every question is required before submission, including multi-select questions. Free-text `Other / write your own` is available by default for every question; callers can explicitly set `allowOther: false` to hide it. `pi-alerts` only supplies notifications while input is needed.
 
 ## Security
 

@@ -118,7 +118,7 @@ async function collectQuestionnaire(ctx: ExtensionContext, questions: Question[]
 		}
 
 		function allRequiredAnswered(): boolean {
-			return questions.every((question) => question.multiSelect || hasResponse(question));
+			return questions.every((question) => hasResponse(question));
 		}
 
 		function submit(cancelled: boolean): void {
@@ -126,6 +126,11 @@ async function collectQuestionnaire(ctx: ExtensionContext, questions: Question[]
 		}
 
 		function advance(): void {
+			const question = currentQuestion();
+			if (question && !hasResponse(question)) {
+				refresh();
+				return;
+			}
 			if (!isMultiQuestion) {
 				submit(false);
 				return;
@@ -277,7 +282,7 @@ async function collectQuestionnaire(ctx: ExtensionContext, questions: Question[]
 					addWrappedWithPrefix(lines, renderWidth, " ", `${theme.fg("muted", `${candidate.label}: `)}${theme.fg("text", display)}`);
 				}
 				lines.push("");
-				addWrappedWithPrefix(lines, renderWidth, " ", theme.fg(allRequiredAnswered() ? "success" : "warning", allRequiredAnswered() ? "Enter to submit" : "Answer the required single-select questions first"));
+				addWrappedWithPrefix(lines, renderWidth, " ", theme.fg(allRequiredAnswered() ? "success" : "warning", allRequiredAnswered() ? "Enter to submit" : "Answer every question before submitting"));
 			} else if (question) {
 				addWrappedWithPrefix(lines, renderWidth, " ", theme.fg("text", question.prompt));
 				lines.push("");

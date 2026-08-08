@@ -55,6 +55,13 @@ link_item "$source_root/themes" "$target_root/themes"
 link_item "$source_root/agents" "$target_root/agents"
 link_item "$source_root/pi-permissions.jsonc" "$target_root/pi-permissions.jsonc"
 
+# Keep pi-subagents compatible with pi-permission-system's nested agent policies.
+"$source_root/scripts/patch-pi-subagents-permissions.sh" "$target_root"
+# Pi may resolve packages from the current project's local .pi/npm cache.
+if [[ "$target_root" != "$source_root" ]]; then
+  "$source_root/scripts/patch-pi-subagents-permissions.sh" "$source_root"
+fi
+
 # Ensure the globally linked Playwright skill has its npm package and browser.
 "$source_root/skills/playwright-browser/scripts/install.sh"
 
