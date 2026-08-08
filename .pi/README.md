@@ -41,6 +41,92 @@ Pi alerts are controlled by `pi-alerts.json` and are enabled explicitly there. C
 
 The third-party `pi-permission-system` package is pinned in `settings.json`; Pi installs missing packages from that global settings file.
 
+## MCP server integration
+
+The `pi-mcp-adapter` package adds MCP support to Pi. It is installed in `settings.json`; reload Pi after installing or changing the package:
+
+```text
+/reload
+/mcp
+```
+
+No server is configured by default. Use `/mcp setup` for guided setup, or create a standard MCP configuration file. The adapter supports local stdio servers and remote HTTP servers.
+
+Configuration locations, from shared/global sources to Pi-specific overrides, include:
+
+- `~/.config/mcp/mcp.json` — shared user configuration
+- `~/.agents/mcp.json` and `~/.agents/mcp/mcp.json` — tool-agnostic user configuration
+- `~/.pi/agent/mcp.json` — Pi global override
+- `.mcp.json` — project-local shared configuration
+- `.pi/mcp.json` — Pi project override
+
+Example project configuration:
+
+```json
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    }
+  }
+}
+```
+
+Servers are lazy by default and MCP tools are exposed through a token-efficient proxy. Use `directTools: true` or a tool-name list for small sets of frequently used tools. Useful commands include:
+
+- `/mcp` — inspect servers, connection state, and proxy/direct tool settings
+- `/mcp setup` — scaffold configuration or add a known server
+- `/mcp tools` — list available MCP tools
+- `/mcp reconnect [server]` — connect or reconnect a server
+- `/mcp-auth [server]` — authenticate an OAuth server
+- `/mcp disable <server>` and `/mcp enable <server>` — add/remove a project-local disable override
+
+MCP servers can execute local commands or access external services. Review server source and configuration before enabling them, keep servers lazy unless eager startup is needed, use `approveTools` for destructive operations, and keep API keys in environment variables or OAuth—not committed configuration files.
+
+## Subagents
+
+The `pi-subagents` package adds focused child Pi agents. It requires no additional configuration for the built-in agents. Ask Pi naturally:
+
+```text
+Use scout to inspect the authentication flow without editing files.
+Use oracle to challenge this implementation plan.
+Run parallel reviewers for correctness, tests, and security.
+Have worker implement the approved plan, then run reviewer.
+```
+
+Built-in roles include:
+
+- `scout` — fast codebase reconnaissance
+- `researcher` — web and documentation research
+- `worker` — implementation
+- `reviewer` — code review and small fixes
+- `oracle` — second opinion without editing
+- `delegate` — general-purpose delegation
+
+Foreground work streams in the conversation. Background work can be inspected with `/subagents-fleet`. Other useful commands are `/subagents` (inspect/configure agents), `/subagents-stop`, `/subagents-doctor`, `/parallel-review`, `/parallel-research`, and `/review-loop`.
+
+Custom agents are Markdown files in `~/.pi/agent/agents/` (global) or `.pi/agents/` (project). Project definitions override global and package definitions with the same name. Example:
+
+```markdown
+---
+name: security-auditor
+description: Read-only security reviewer
+tools: read, grep, find, ls
+thinking: high
+---
+
+Review code for security issues. Do not modify files.
+```
+
+Restrict child tools explicitly for read-only agents, use fresh-context reviewers for independent opinions, and use worktree isolation when multiple agents may edit the same repository. The recommended implementation loop is: clarify → scout → worker → fresh reviewers → worker.
+
+This repository's `.pi/agents/reviewer.md` intentionally overrides the package reviewer with a read-only policy. Review agent definitions before adding or enabling agents because child Pi processes can inherit tools, extensions, skills, and project context.
+
+## Welcome dashboard
+
+`extensions/collin-powerline-welcome.ts` shows `/mcp` and `/subagents` in its useful-commands card. The project card also reports configured MCP server count and discovered subagent definitions, including package built-ins and global/project Markdown agents. Run `/welcome` to show it again after dismissing it.
+
 ## LSP setup
 
 `lsp-global.json` configures Pi to reuse language servers installed by Mason.nvim. The

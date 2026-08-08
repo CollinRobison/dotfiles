@@ -64,6 +64,8 @@ interface WelcomeData {
     themes: number;
     prompts: number;
   };
+  mcpServers: number;
+  subagents: number;
   recentSessions: string[];
 }
 
@@ -110,6 +112,42 @@ function countSkillDirectories(paths: string[]): number {
     }
   }
   return seen.size;
+}
+
+function countAgentDefinitions(paths: string[]): number {
+  const seen = new Set<string>();
+  for (const directory of paths) {
+    if (!existsSync(directory)) continue;
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.endsWith(".md")) seen.add(entry.name);
+    }
+  }
+  return seen.size;
+}
+
+function readJsonObject(path: string): Record<string, unknown> {
+  try {
+    const source = readFileSync(path, "utf8")
+      .replace(/\/\*[\s\S]*?\*\//gu, "")
+      .replace(/^\s*\/\/.*$/gmu, "")
+      .replace(/,\s*([}\]])/gu, "$1");
+    const value = JSON.parse(source) as unknown;
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? value as Record<string, unknown>
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function countMcpServers(paths: string[]): number {
+  const names = new Set<string>();
+  for (const path of paths) {
+    const servers = readJsonObject(path).mcpServers;
+    if (!servers || typeof servers !== "object" || Array.isArray(servers)) continue;
+    for (const name of Object.keys(servers)) names.add(name);
+  }
+  return names.size;
 }
 
 function sessionProjectName(path: string, directory: string): string {
@@ -182,6 +220,20 @@ function getWelcomeData(ctx: ExtensionContext): WelcomeData {
   const provider = model?.provider ?? "no provider";
   const projectPi = join(ctx.cwd, ".pi");
   const globalPi = join(homedir(), ".pi", "agent");
+  const mcpConfigPaths = [
+    join(homedir(), ".config", "mcp", "mcp.json"),
+    join(homedir(), ".agents", "mcp.json"),
+    join(homedir(), ".agents", "mcp", "mcp.json"),
+    join(globalPi, "mcp.json"),
+    join(ctx.cwd, ".mcp.json"),
+    join(projectPi, "mcp.json"),
+  ];
+  const agentPaths = [
+    join(globalPi, "agents"),
+    join(projectPi, "agents"),
+    join(globalPi, "npm", "node_modules", "pi-subagents", "agents"),
+    join(projectPi, "npm", "node_modules", "pi-subagents", "agents"),
+  ];
 
   return {
     cwd: shortCwd(ctx.cwd),
@@ -195,6 +247,8 @@ function getWelcomeData(ctx: ExtensionContext): WelcomeData {
       themes: countFiles([join(projectPi, "themes"), join(globalPi, "themes")], [".json"]),
       prompts: countFiles([join(projectPi, "prompts"), join(globalPi, "prompts")], [".md"]),
     },
+    mcpServers: countMcpServers(mcpConfigPaths),
+    subagents: countAgentDefinitions(agentPaths),
     recentSessions: recentSessions(),
   };
 }
@@ -285,6 +339,8 @@ function buildInfo(theme: WelcomeTheme, data: WelcomeData, width: number): strin
       line(theme, "path", location),
       line(theme, "model", `${data.provider} / ${data.model}`),
       line(theme, "thinking", data.thinking),
+      line(theme, "MCP", `${data.mcpServers} server${data.mcpServers === 1 ? "" : "s"}`),
+      line(theme, "subagents", `${data.subagents} discovered`),
     ]),
     "",
     ...card(theme, width, "loaded", loaded),
@@ -298,6 +354,8 @@ function buildInfo(theme: WelcomeTheme, data: WelcomeData, width: number): strin
       `${theme.fg("muted", "/fork")}  branch from an earlier message`,
       `${theme.fg("muted", "/compact")}  reduce context size manually`,
       `${theme.fg("muted", "/session")}  inspect session file and usage`,
+      `${theme.fg("muted", "/mcp")}  inspect MCP servers and tools`,
+      `${theme.fg("muted", "/subagents")}  inspect and configure subagents`,
       `${theme.fg("muted", "/reload")}  reload extensions and settings`,
       `${theme.fg("muted", "/welcome")}  show this screen again`,
     ]),
