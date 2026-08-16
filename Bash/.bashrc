@@ -80,20 +80,24 @@ gitnew() {
   git switch -c "$1" && git push -u origin HEAD
 }
 
-function gitcode () {
-    # This is a command that will update a local repo to origin and then open it up in VS Code.
+function _gitopen () {
+    # Update a local repo to origin and open it with the specified editor.
+    local editor="$1"
+    local project_path="$2"
 
-    if [ -z "$1" ]; then 
+    if [ -z "$project_path" ]; then
         echo "Please specify project path."
-        return 1 
+        return 1
     fi
 
     # Convert to absolute path (cross-platform)
-    full_path=$(realpath_portable "$1")
+    local full_path
+    full_path=$(realpath_portable "$project_path")
 
-    # Check if there are any changes locally not pushed 
+    # Check if there are any changes locally not pushed
+    local git_status
     git_status=$(git -C "$full_path" status 2>&1)
-    exit_code=$?
+    local exit_code=$?
 
     # Check if git status failed
     if [ $exit_code -ne 0 ]; then
@@ -101,17 +105,23 @@ function gitcode () {
         return $exit_code
     fi
 
-    # decide whether to do a git pull and open vs code
+    # Open directly when there are local changes; otherwise pull first.
     if [[ "$git_status" == *'Changes not staged for commit'* ]]; then
-        code -- "$full_path"
+        "$editor" -- "$full_path"
     elif [[ "$git_status" == *'branch is up to date'* ]]; then
-        git -C "$full_path" pull && code -- "$full_path"
+        git -C "$full_path" pull && "$editor" -- "$full_path"
     else
         echo "there was an error"
     fi
 }
 
+function gitcode () {
+    _gitopen code "$1"
+}
 
+function gitnvim () {
+    _gitopen nvim "$1"
+}
 
 
 function list-alias() {
@@ -121,6 +131,7 @@ function list-alias() {
     g = git \n
     gitnew = Create, checkout, and push a new branch all in one command. \n
     gitcode = Pull current git branch to match remote and then open VS Code for a project. \n
+    gitnvim = Pull current git branch to match remote and then open Neovim for a project. \n
     gitgonefeature = Remove all git branches except main and master. \n 
     h = history command. \n
     \n\nTerminal Games:\n-------------\n
