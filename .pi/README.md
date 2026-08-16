@@ -77,10 +77,13 @@ Servers are lazy by default and MCP tools are exposed through a token-efficient 
 
 - `/mcp` — inspect servers, connection state, and proxy/direct tool settings
 - `/mcp setup` — scaffold configuration or add a known server
+- `/mcp-setup [server] [global|local]` — use the dotfiles guided prompt for a curated preset, including scope selection, OAuth setup, and validation
 - `/mcp tools` — list available MCP tools
 - `/mcp reconnect [server]` — connect or reconnect a server
 - `/mcp-auth [server]` — authenticate an OAuth server
 - `/mcp disable <server>` and `/mcp enable <server>` — add/remove a project-local disable override
+
+The `/mcp-setup` prompt covers the adapter's curated presets: GitHub, Notion, DeepWiki, Context7, and Chrome DevTools. It keeps secrets out of config and explains when a provider needs a pre-registered OAuth client. For GitHub, it prefers the already-authenticated `gh` CLI and configures a command-backed bearer header (`!gh auth token`), so no OAuth App or copied PAT is needed. If `gh` is not authenticated, run `gh auth login` once and retry. The MCP authorization specification treats Dynamic Client Registration as optional; GitHub's remote server also documents PAT authentication as an alternative to OAuth.
 
 MCP servers can execute local commands or access external services. Review server source and configuration before enabling them, keep servers lazy unless eager startup is needed, use `approveTools` for destructive operations, and keep API keys in environment variables or OAuth—not committed configuration files.
 
