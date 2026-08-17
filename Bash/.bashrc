@@ -10,6 +10,8 @@ alias cls="clear"
 
 alias g="git"
 
+alias p="python3"
+
 alias gitgonefeature="git branch | grep -v 'master' | grep -v 'main' | xargs git branch -D"
 
 alias h="history"

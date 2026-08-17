@@ -59,6 +59,18 @@ return {
     vim.opt.completeopt = { "menu", "menuone", "noselect" }
 
     vim.lsp.config("basedpyright", {
+      root_markers = {
+        "pyproject.toml",
+        "pyrightconfig.json",
+        "setup.py",
+        "setup.cfg",
+        "requirements.txt",
+        "Pipfile",
+        "poetry.lock",
+        "uv.lock",
+        ".venv",
+        ".git",
+      },
       settings = {
         basedpyright = {
           analysis = {
