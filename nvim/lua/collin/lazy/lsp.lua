@@ -131,7 +131,29 @@ return {
         local client = assert(vim.lsp.get_client_by_id(event.data.client_id))
 
         if client:supports_method("textDocument/completion") then
+          vim.b[event.buf].lsp_completion_enabled = true
           vim.lsp.completion.enable(true, client.id, event.buf, { autotrigger = true })
+
+          vim.keymap.set("n", "<leader>lc", function()
+            local enabled = vim.b[event.buf].lsp_completion_enabled ~= false
+            vim.b[event.buf].lsp_completion_enabled = not enabled
+
+            for _, attached_client in ipairs(vim.lsp.get_clients({ bufnr = event.buf })) do
+              if attached_client:supports_method("textDocument/completion") then
+                vim.lsp.completion.enable(not enabled, attached_client.id, event.buf, {
+                  autotrigger = true,
+                })
+              end
+            end
+
+            vim.notify((not enabled and "Enabled" or "Disabled") .. " LSP completion")
+          end, { buffer = event.buf, desc = "Toggle LSP completion" })
+
+          vim.keymap.set("i", "<C-Space>", function()
+            if vim.b[event.buf].lsp_completion_enabled ~= false then
+              vim.lsp.completion.get()
+            end
+          end, { buffer = event.buf, desc = "Trigger LSP completion" })
         end
 
         if client:supports_method("textDocument/inlayHint") then
