@@ -2,6 +2,18 @@
 
 This document describes the plan for adding testing and debugging support to this Neovim configuration, including the maintained `neotest-dotnet` fork at `CollinRobison/neotest-dotnet`.
 
+## Implementation status
+
+The baseline integrations are now implemented and loaded lazily:
+
+- Mason/DAP tooling, `nvim-dap`, DAP UI, virtual text, signs, and language-specific adapters are configured.
+- Neotest is configured for Python, Go, Rust, Vitest, Jest, CTest, the maintained C# adapter, and a `vim-test` fallback.
+- Roslyn C# code-lens refresh/run mappings and the requested `<leader>d`/`<leader>t` mappings are present.
+- Rust, Cargo Nextest, CMake/CTest, and Mason debugger packages have been installed on the development machine.
+- Representative Python, Go, Rust, Vitest, Jest, CTest/native C++, and .NET test runs have been validated.
+
+Remaining validation is adapter- and project-specific: C# `netcoredbg` breakpoint/variable inspection currently needs investigation because the installed upstream debugger exits without resolving the smoke-test breakpoint; Bash/Lua/Playwright remain intentionally deferred until a project requires them.
+
 ## Current configuration
 
 Startup is:
@@ -20,7 +32,7 @@ The configuration currently uses:
 - Native `vim.lsp.config()` and `vim.lsp.enable()` APIs.
 - `nvim-treesitter` with parsers for C#, C/C++, Go, Rust, Python, JavaScript, TypeScript, Svelte, Bash, Lua, SQL, and related formats.
 - Roslyn test code lenses enabled through `lsp.lua`.
-- No DAP client, test runner, test adapter, or debugger adapter yet.
+- DAP and Neotest integrations are configured under `lua/collin/lazy/`, with optional external adapters installed through Mason.
 
 The authoritative language/server list is in `nvim/lua/collin/lazy/lsp.lua`. Existing C# settings include:
 
@@ -144,9 +156,9 @@ The C# fork is preferred over the upstream adapter because it can be updated and
 ### Rust
 
 - Use `neotest-rust` and `codelldb`.
-- Install Rust/Cargo before enabling Rust test/debug checks.
+- `neotest-rust` uses Cargo Nextest; keep `cargo test` as the authoritative native fallback.
 - Respect workspaces, features, and target selection.
-- Validate nearest test and `cargo test`.
+- Validate nearest test and both `cargo test` and `cargo nextest run`.
 
 ### C and C++
 
@@ -231,7 +243,7 @@ These mappings are a convenience feature, not a replacement for suite-level Neot
 
 ## External prerequisites
 
-The current environment already provides Node.js, Go, .NET, Clang, `uv`, Neovim, and Tree-sitter CLI through the Brewfile or local installation.
+The current environment provides Node.js, Go, .NET, Clang, Rust/Cargo, Cargo Nextest, CMake/CTest, `uv`, Neovim, and Tree-sitter CLI through the Brewfile or local installation. Python test/debug dependencies remain project-local.
 
 Before implementation, add or verify:
 

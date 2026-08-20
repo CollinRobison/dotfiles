@@ -2,7 +2,6 @@ return {
   "neovim/nvim-lspconfig",
   event = { "BufReadPre", "BufNewFile" },
   dependencies = {
-    "mason-org/mason.nvim",
     "mason-org/mason-lspconfig.nvim",
     "b0o/SchemaStore.nvim",
   },
@@ -32,7 +31,6 @@ return {
       "yamlls",
     }
 
-    require("mason").setup()
     require("mason-lspconfig").setup({
       ensure_installed = servers,
       automatic_enable = false,
@@ -166,6 +164,15 @@ return {
 
         if client:supports_method("textDocument/codeLens") then
           vim.lsp.codelens.enable(true, { bufnr = event.buf, client_id = client.id })
+
+          if client.name == "roslyn_ls" and vim.tbl_contains({ "cs", "csharp" }, vim.bo[event.buf].filetype) then
+            vim.keymap.set("n", "<leader>lr", function()
+              vim.lsp.codelens.enable(true, { bufnr = event.buf, client_id = client.id })
+            end, { buffer = event.buf, desc = "Refresh C# code lenses" })
+            vim.keymap.set("n", "<leader>lt", function()
+              vim.lsp.codelens.run({ client_id = client.id })
+            end, { buffer = event.buf, desc = "Run C# code lens" })
+          end
         end
 
         vim.keymap.set("n", "<leader>lf", function()
