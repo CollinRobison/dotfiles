@@ -1,6 +1,8 @@
-# Neovim Atlas Regeneration
+# Neovim Field Guide Generator
 
-`regenerate-keymap-atlas.py` rebuilds the searchable **Neovim Dark Complete Atlas** while preserving the existing field-guide visual design.
+`regenerate-keymap-atlas.py` rebuilds the searchable **Neovim Complete Field Guide** from the current configuration in this checkout.
+
+It keeps the dark landscape field-guide look and the beginner-friendly quick start, but it does **not** copy or append to a frozen PDF. That means an updated mapping replaces its old entry and newly declared mappings/tooling are added to the appropriate section the next time the guide is generated.
 
 ## Run it
 
@@ -10,41 +12,64 @@ From the dotfiles repository root:
 python3 nvim/scripts/regenerate-keymap-atlas.py
 ```
 
-Or, from this directory:
+Or from this directory:
 
 ```bash
 python3 regenerate-keymap-atlas.py
 ```
 
-## What it updates
+The generator uses paths relative to its own location, so either command works from any current working directory.
 
-The script:
+## What it produces
 
-1. Retains the checked-in 26-page field-guide template at `templates/Nvim-Dark-Complete-Atlas-main.pdf`.
-2. Generates matching dark-mode addendum pages for the audited DAP debugger, Neotest test-management, adapter, and LSP-completion information.
-3. Adds a visible **Last regenerated: YYYY-MM-DD** stamp beside the title on the first page and repeats it on the refreshed debugger/test-management page.
-4. Writes preview artifacts to:
-   - `~/Desktop/Nvim-Dark-Complete-Atlas.html`
-   - `~/Desktop/Nvim-Dark-Complete-Atlas.pdf`
-5. Updates the version committed with the dotfiles:
-   - `nvim/docs/Nvim-Dark-Complete-Atlas.pdf`
+- Desktop HTML preview: `~/Desktop/Nvim-Dark-Complete-Atlas.html`
+- Desktop PDF: `~/Desktop/Nvim-Dark-Complete-Atlas.pdf`
+- Versioned repository PDF: `nvim/docs/Nvim-Dark-Complete-Atlas.pdf`
+
+The first page includes the **Last regenerated** date in the top-right corner.
+
+## What is generated from configuration
+
+On every normal run, the script scans every Lua file under `nvim/lua/` for user-facing mappings declared through:
+
+- Lazy plugin `keys = { ... }` tables
+- `which_key.add({ ... })`
+- `vim.keymap.set(...)`, including buffer-local mappings
+- local `map(lhs, rhs, desc)` helpers used by debugger/test configuration
+- configured `owner/plugin` tool identifiers, including integrations with no direct user mapping
+
+Rows are grouped by the source feature (for example: Find & Navigate, Git, Debugging, Testing, Markdown, NvimTree, and LSP/Completion). Each row carries its mode and context, so mappings that only work in a Markdown, NvimTree, dashboard, or LSP-attached buffer are labeled clearly.
+
+The guide also includes a small stable Vim quick-start/reference section. Those are language fundamentals, not guessed plugin mappings.
+
+## Runtime audit
+
+A normal run starts this checkout headlessly and counts described runtime mappings as a cross-check. The **published mapping inventory remains the Lua source scan**, which prevents undocumented plugin defaults from becoming misleading entries.
+
+If you only need a fast source-only rebuild:
+
+```bash
+python3 nvim/scripts/regenerate-keymap-atlas.py --skip-runtime-audit
+```
 
 ## Requirements
 
 - Python 3
-- `pdfunite` (Poppler)
-- Either:
-  - `weasyprint` **and** `pypdf` installed on your `PATH` / Python environment, or
-  - `uv` installed on your `PATH`
+- Neovim for the normal runtime cross-check (optional when using `--skip-runtime-audit`)
+- Either `weasyprint` available on `PATH`, or `uv` available on `PATH`
 
-When `weasyprint` is not installed, the script automatically uses:
+When `weasyprint` is absent, the script uses:
 
 ```bash
 uv run --with weasyprint weasyprint ...
 ```
 
-`uv` caches these dependencies after its first use. The script uses `pypdf` to stamp the date onto page one while preserving the original PDF artwork.
+`uv` caches WeasyPrint after its first use.
 
-## After changing mappings
+## After changing mappings or tooling
 
-The existing 26-page field guide is the preserved visual baseline. The generated addendum contains the reviewed debugger/test/LSP inventory. If you make new debugger or test keybindings, update the audited command lists in `regenerate-keymap-atlas.py`, run the script, inspect the Desktop PDF, then commit both the script and `nvim/docs/Nvim-Dark-Complete-Atlas.pdf`.
+1. Make the Lua configuration change.
+2. Run the generator.
+3. Open the Desktop PDF and use `Ctrl+F` for a literal key or plain-English action.
+4. Confirm the changed/new command appears in its feature section and has the correct mode/context.
+5. Review and commit the updated PDF and generator changes together.
