@@ -22,7 +22,7 @@ The script:
 
 1. Retains the checked-in 26-page field-guide template at `templates/Nvim-Dark-Complete-Atlas-main.pdf`.
 2. Generates matching dark-mode addendum pages for the audited DAP debugger, Neotest test-management, adapter, and LSP-completion information.
-3. Adds a visible **Last regenerated: YYYY-MM-DD** stamp.
+3. Adds a visible **Last regenerated: YYYY-MM-DD** stamp beside the title on the first page and repeats it on the refreshed debugger/test-management page.
 4. Writes preview artifacts to:
    - `~/Desktop/Nvim-Dark-Complete-Atlas.html`
    - `~/Desktop/Nvim-Dark-Complete-Atlas.pdf`
@@ -34,7 +34,7 @@ The script:
 - Python 3
 - `pdfunite` (Poppler)
 - Either:
-  - `weasyprint` installed on your `PATH`, or
+  - `weasyprint` **and** `pypdf` installed on your `PATH` / Python environment, or
   - `uv` installed on your `PATH`
 
 When `weasyprint` is not installed, the script automatically uses:
@@ -43,7 +43,7 @@ When `weasyprint` is not installed, the script automatically uses:
 uv run --with weasyprint weasyprint ...
 ```
 
-`uv` caches this dependency after its first use.
+`uv` caches these dependencies after its first use. The script uses `pypdf` to stamp the date onto page one while preserving the original PDF artwork.
 
 ## After changing mappings
 

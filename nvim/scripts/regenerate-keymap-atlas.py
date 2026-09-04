@@ -11,7 +11,7 @@ Run: python3 nvim/scripts/regenerate-keymap-atlas.py
 from __future__ import annotations
 
 import html
-import re
+import importlib.util
 import shutil
 import subprocess
 import sys
@@ -24,6 +24,9 @@ TEMPLATE = SCRIPTS / "templates" / "Nvim-Dark-Complete-Atlas-main.pdf"
 DESKTOP = Path.home() / "Desktop"
 HTML = DESKTOP / "Nvim-Dark-Complete-Atlas.html"
 ADDENDUM = DESKTOP / ".Nvim-Dark-Complete-Atlas-addendum.pdf"
+STAMP_HTML = DESKTOP / ".Nvim-Dark-Complete-Atlas-stamp.html"
+STAMP = DESKTOP / ".Nvim-Dark-Complete-Atlas-stamp.pdf"
+STAMPED_TEMPLATE = DESKTOP / ".Nvim-Dark-Complete-Atlas-stamped-template.pdf"
 OUTPUT = DESKTOP / "Nvim-Dark-Complete-Atlas.pdf"
 REPO_OUTPUT = NVIM / "docs" / "Nvim-Dark-Complete-Atlas.pdf"
 
@@ -43,10 +46,6 @@ FALLBACK_TEST = [
     ("Normal", "Space t x", "Stop test"), ("Normal", "Space t v", "Fallback: run nearest test"),
     ("Normal", "Space t V", "Fallback: run current file"), ("Normal", "Space t A", "Fallback: run test suite"),
 ]
-
-def display(key: str) -> str:
-    return (key.replace("<leader>", "Space ").replace("<C-Space>", "Ctrl-Space")
-            .replace("<CR>", "Enter").replace("<C-", "Ctrl-").replace(">", ""))
 
 def maps(path: Path, fallback: list[tuple[str, str, str]]) -> list[tuple[str, str, str]]:
     """Return the audited user-facing command inventory.
@@ -83,6 +82,40 @@ def build_html() -> str:
 {page('Adapters, runners & context','YOUR VERIFIED CONFIGURATION','Commands are searchable • context is explicit',adapters+context,28)}
 </body></html>"""
 
+def build_stamp_html() -> str:
+    stamp = html.escape("Last regenerated: " + date.today().isoformat())
+    # Coordinates deliberately place the stamp beneath the first page's existing
+    # setup metadata, next to the title rather than hidden in a final appendix.
+    return f"""<!doctype html><html><head><meta charset='utf-8'><style>
+@page {{ size: letter landscape; margin: 0; }}
+body {{ margin: 0; background: transparent; font-family: Arial, sans-serif; }}
+.stamp {{ position: fixed; top: .48in; left: 3.25in; color: #b6c9d8; font-size: 9.5pt; letter-spacing: .15px; }}
+</style></head><body><div class='stamp'>{stamp}</div></body></html>"""
+
+def stamp_first_page() -> None:
+    code = """
+from pypdf import PdfReader, PdfWriter
+import sys
+base, overlay, output = map(str, sys.argv[1:4])
+reader = PdfReader(base)
+mark = PdfReader(overlay).pages[0]
+writer = PdfWriter()
+for index, page in enumerate(reader.pages):
+    if index == 0:
+        page.merge_page(mark)
+    writer.add_page(page)
+with open(output, 'wb') as file:
+    writer.write(file)
+"""
+    if importlib.util.find_spec("pypdf"):
+        command = [sys.executable, "-c", code]
+    else:
+        uv = shutil.which("uv")
+        if not uv:
+            raise RuntimeError("pypdf is required to stamp the first page; install pypdf or uv.")
+        command = [uv, "run", "--with", "pypdf", "python", "-c", code]
+    subprocess.run(command + [str(TEMPLATE), str(STAMP), str(STAMPED_TEMPLATE)], check=True)
+
 def renderer() -> list[str]:
     weasy = shutil.which("weasyprint")
     if weasy: return [weasy]
@@ -98,8 +131,11 @@ def main() -> int:
         print("pdfunite is required to merge the preserved field guide and refreshed addendum.", file=sys.stderr); return 2
     DESKTOP.mkdir(parents=True, exist_ok=True); REPO_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     HTML.write_text(build_html(), encoding="utf-8")
+    STAMP_HTML.write_text(build_stamp_html(), encoding="utf-8")
     subprocess.run(renderer() + [str(HTML), str(ADDENDUM)], check=True)
-    subprocess.run([unite, str(TEMPLATE), str(ADDENDUM), str(OUTPUT)], check=True)
+    subprocess.run(renderer() + [str(STAMP_HTML), str(STAMP)], check=True)
+    stamp_first_page()
+    subprocess.run([unite, str(STAMPED_TEMPLATE), str(ADDENDUM), str(OUTPUT)], check=True)
     shutil.copy2(OUTPUT, REPO_OUTPUT)
     print(f"HTML preview: {HTML}\nPDF: {OUTPUT}\nRepository PDF: {REPO_OUTPUT}")
     return 0
