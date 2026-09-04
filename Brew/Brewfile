@@ -27,12 +27,20 @@ brew "node"
 brew "go"
 # Fast Python package and project manager required by uv tool entries below
 brew "uv"
+# Rust toolchain required by rust-analyzer and Rust test/debug support
+brew "rust"
+# Rust Neotest adapter's test runner
+brew "cargo-nextest"
+# CMake/CTest required by native C/C++ test projects
+brew "cmake"
 # .NET SDK required by the Roslyn C# language server
 brew "dotnet"
 # The AI coding agent built for the terminal.
 brew "anomalyco/tap/opencode", trusted: true
 brew  "can1357/tap/omp", trusted: true 
 brew "pi-coding-agent"
+# terminal activity monitor
+brew "btop"
 # E-books management software
 cask "calibre"
 # Multimedia player

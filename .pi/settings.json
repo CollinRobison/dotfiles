@@ -1,13 +1,13 @@
 {
   "theme": "lavender-town",
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-luna",
-  "defaultThinkingLevel": "medium",
+  "defaultProvider": "ollama",
+  "defaultModel": "qwen3.8:27b",
+  "defaultThinkingLevel": "high",
   "enabledModels": [
     "openai-codex/gpt-5.6-luna",
     "openai-codex/gpt-5.4-mini"
   ],
-  "lastChangelogVersion": "0.83.0",
+  "lastChangelogVersion": "0.84.2",
   "showHardwareCursor": true,
   "enableInstallTelemetry": false,
   "warnings": {
