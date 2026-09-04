@@ -36,7 +36,8 @@ On every normal run, the script scans every Lua file under `nvim/lua/` for user-
 - `which_key.add({ ... })`
 - `vim.keymap.set(...)`, including buffer-local mappings
 - local `map(lhs, rhs, desc)` helpers used by debugger/test configuration
-- configured `owner/plugin` tool identifiers, including integrations with no direct user mapping
+- configured Dashboard launcher and Mkdnflow data mappings that do not use a `desc` option
+- plugins, LSP servers, DAP adapters, declared executables, Markdown formatters, and Markdown linters
 
 Rows are grouped by the source feature (for example: Find & Navigate, Git, Debugging, Testing, Markdown, NvimTree, and LSP/Completion). Each row carries its mode and context, so mappings that only work in a Markdown, NvimTree, dashboard, or LSP-attached buffer are labeled clearly.
 
@@ -44,7 +45,7 @@ The guide also includes a small stable Vim quick-start/reference section. Those 
 
 ## Runtime audit
 
-A normal run starts this checkout headlessly and counts described runtime mappings as a cross-check. The **published mapping inventory remains the Lua source scan**, which prevents undocumented plugin defaults from becoming misleading entries.
+A normal run starts this checkout headlessly and separately counts described global, Markdown-buffer, and NvimTree-buffer mappings. It also reports whether an LSP client attached; LSP-specific rows remain labeled from their source configuration if no server is available in the isolated check. The **published mapping inventory remains the Lua source scan**, which prevents unrelated plugin defaults from becoming misleading entries.
 
 If you only need a fast source-only rebuild:
 
