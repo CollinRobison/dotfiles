@@ -130,9 +130,17 @@ def main() -> int:
     DESKTOP.mkdir(parents=True, exist_ok=True); REPO_PDF.parent.mkdir(parents=True, exist_ok=True)
     HTML_OUT.write_text(build_html(extract_maps()), encoding="utf-8")
     weasy = shutil.which("weasyprint")
-    if not weasy:
-        print("weasyprint not found. Install it, then re-run this script.", file=sys.stderr); return 2
-    subprocess.run([weasy, str(HTML_OUT), str(PDF_OUT)], check=True)
+    if weasy:
+        command = [weasy, str(HTML_OUT), str(PDF_OUT)]
+    else:
+        uv = shutil.which("uv")
+        if not uv:
+            print("Neither weasyprint nor uv is available. Install one, then re-run this script.", file=sys.stderr)
+            return 2
+        # `uv run --with` makes the generator portable: first use downloads the
+        # renderer, later uses are served from uv's cache.
+        command = [uv, "run", "--with", "weasyprint", "weasyprint", str(HTML_OUT), str(PDF_OUT)]
+    subprocess.run(command, check=True)
     shutil.copy2(PDF_OUT, REPO_PDF)
     print(f"HTML: {HTML_OUT}\nPDF: {PDF_OUT}\nRepository PDF: {REPO_PDF}")
     return 0
