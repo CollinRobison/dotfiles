@@ -2,7 +2,7 @@
 
 `regenerate-keymap-atlas.py` rebuilds the searchable **Neovim Complete Field Guide** from the current configuration in this checkout.
 
-It keeps the dark landscape field-guide look and the beginner-friendly quick start, but it does **not** copy or append to a frozen PDF. That means an updated mapping replaces its old entry and newly declared mappings/tooling are added to the appropriate section the next time the guide is generated.
+It keeps the dark landscape field-guide look and reconstructs the original guide’s teaching flow from editable source (`atlas_guide_content.py`). It does **not** copy or append to a frozen PDF. Current mappings appear both as concise contextual highlights and in a complete generated appendix, so changed keys replace their old documentation.
 
 ## Run it
 
@@ -41,7 +41,19 @@ On every normal run, the script scans every Lua file under `nvim/lua/` for user-
 
 Rows are grouped by the source feature (for example: Find & Navigate, Git, Debugging, Testing, Markdown, NvimTree, and LSP/Completion). Each row carries its mode and context, so mappings that only work in a Markdown, NvimTree, dashboard, or LSP-attached buffer are labeled clearly.
 
-The guide also includes a small stable Vim quick-start/reference section. Those are language fundamentals, not guessed plugin mappings.
+The guide also includes reconstructed, editable Vim teaching material in `atlas_guide_content.py`: movement, operators/text objects, search/substitute/help, workspace management, code/Git workflows, writing tools, and a Ctrl+F index. Change that file when improving the human teaching content; change Lua when updating the configuration inventory.
+
+## New mapping categories and descriptions
+
+`atlas-categories.json` stores any category choices made during an interactive run. A newly discovered mapping that does not match a known feature asks for a category and saves the answer. If its Lua declaration has no usable `desc`, the guide derives a plain-English best-effort action (and tells the reader to add `desc` for a better explanation).
+
+For automation or a non-interactive shell, use:
+
+```bash
+python3 nvim/scripts/regenerate-keymap-atlas.py --non-interactive
+```
+
+Unknown mappings are then placed in **New / uncategorized configuration** in the generated appendix rather than blocking the rebuild.
 
 ## Runtime audit
 

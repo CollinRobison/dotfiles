@@ -24,12 +24,15 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
+from atlas_guide_content import CORE_SECTIONS, INDEX_PROMPTS
+
 NVIM = Path(__file__).resolve().parents[1]
 LUA = NVIM / "lua"
 DESKTOP = Path.home() / "Desktop"
 HTML_OUT = DESKTOP / "Nvim-Dark-Complete-Atlas.html"
 PDF_OUT = DESKTOP / "Nvim-Dark-Complete-Atlas.pdf"
 REPO_PDF = NVIM / "docs" / "Nvim-Dark-Complete-Atlas.pdf"
+CATEGORY_FILE = Path(__file__).with_name("atlas-categories.json")
 
 MODE_NAMES = {"n": "Normal", "v": "Visual", "x": "Visual", "o": "Operator-pending", "i": "Insert", "s": "Select", "c": "Command", "t": "Terminal"}
 CATEGORY = {
@@ -136,6 +139,16 @@ def display_key(key: str) -> str:
     return key
 
 
+def best_effort_description(rhs: str) -> str:
+    command = re.search(r'<cmd>\s*([^<]+)<CR>', rhs)
+    if command:
+        return "Run " + command.group(1).strip()
+    target = re.search(r'(?:require\(["\']([^"\']+)["\']\)|([\w.]+))', rhs)
+    if target:
+        return "Use " + next(value for value in target.groups() if value)
+    return "Custom callback (add a Lua desc to refine this explanation)"
+
+
 def modes(value: str) -> list[str]:
     found = quoted_values(value)
     return [MODE_NAMES.get(mode, mode) for mode in found] or ["Normal"]
@@ -171,11 +184,12 @@ def extract_table_entries(text: str, marker: str, path: Path) -> list[Mapping]:
             if not entry.startswith("{"): continue
             values = quoted_values(entry)
             description = re.search(r'desc\s*=\s*"([^"]+)"', entry)
-            if not values or not description: continue
+            if not values: continue
+            action = description.group(1) if description else best_effort_description(values[1] if len(values) > 1 else "")
             mode_match = re.search(r'mode\s*=\s*({[^}]+}|"[^"]+")', entry)
             context = file_context(path) if "buffer" in entry else "Global"
             for mode in modes(mode_match.group(1) if mode_match else '"n"'):
-                out.append(Mapping(mode, display_key(values[0]), description.group(1), category(path), path.name, context))
+                out.append(Mapping(mode, display_key(values[0]), action, category(path), path.name, context))
     return out
 
 
@@ -191,14 +205,14 @@ def extract_keymap_calls(text: str, path: Path) -> list[Mapping]:
         if not found: continue
         call = found[0][1:-1]
         desc = re.search(r'desc\s*=\s*"([^"]+)"', call)
-        if not desc: continue
         args = split_top_level(call)
         if len(args) < 2: continue
         key_values = quoted_values(args[1])
         if not key_values: continue
+        action = desc.group(1) if desc else best_effort_description(args[2] if len(args) > 2 else "")
         context = file_context(path) if "buffer" in call else "Global"
         for mode in modes(args[0]):
-            out.append(Mapping(mode, display_key(key_values[0]), desc.group(1), category(path), path.name, context))
+            out.append(Mapping(mode, display_key(key_values[0]), action, category(path), path.name, context))
     return out
 
 
@@ -226,9 +240,16 @@ def extract_special_mappings(text: str, path: Path) -> list[Mapping]:
         start = text.find("{", hit) if hit >= 0 else -1
         found = balanced(text, start) if start >= 0 else None
         if found:
+            dashboard_actions = {
+                "ene": "Start a new empty file", "Telescope find_files": "Find files", "Telescope keymaps": "Find keymaps",
+                "Telescope project": "Switch projects", "Telescope oldfiles": "Open recent files", "Telescope live_grep": "Search project text",
+                "LazyGit": "Open LazyGit", "NvimTreeToggle": "Toggle file explorer", "Lazy": "Open plugin manager",
+                "qa": "Quit Neovim", "AutoSession search": "Find and restore a session",
+            }
             for key, command in re.findall(r'(\w+)\s*=\s*"([^"]+)"', found[0]):
                 action = command.removeprefix("<cmd>").removesuffix("<CR>")
-                out.append(Mapping("Normal", display_key(key), f"Dashboard: {action}", "Dashboard", path.name, "Dashboard buffer"))
+                action = dashboard_actions.get(action, next((label for prefix, label in (("Telescope project", "Switch projects"), ("Telescope oldfiles", "Open recent files"), ("Telescope find_files", "Find files"), ("Telescope live_grep", "Search project text")) if action.startswith(prefix)), f"Run {action}"))
+                out.append(Mapping("Normal", display_key(key), action, "Dashboard", path.name, "Dashboard buffer"))
     if path.stem == "markdown":
         enter = re.search(r'MkdnEnter\s*=\s*{\s*({[^}]+})\s*,\s*"(<CR>)"\s*}', text)
         if enter:
@@ -253,6 +274,34 @@ def extract_mappings() -> list[Mapping]:
         if key not in seen:
             seen.add(key); output.append(entry)
     return sorted(output, key=lambda item: (item.category, item.context, item.key.lower(), item.key))
+
+
+def mapping_identity(item: Mapping) -> str:
+    return "|".join((item.source, item.mode, item.key, item.context))
+
+
+def apply_saved_categories(entries: list[Mapping], interactive: bool) -> list[Mapping]:
+    data = json.loads(CATEGORY_FILE.read_text()) if CATEGORY_FILE.exists() else {"mapping_categories": {}}
+    saved: dict[str, str] = data.setdefault("mapping_categories", {})
+    available = sorted(set(CATEGORY.values()))
+    changed = False; output: list[Mapping] = []
+    for item in entries:
+        identity = mapping_identity(item)
+        target = saved.get(identity, item.category)
+        if target == "Other configured mappings":
+            if interactive and sys.stdin.isatty():
+                print(f"\nNew atlas mapping: {item.key} — {item.description} ({item.source})")
+                print("Categories: " + ", ".join(available))
+                answer = input("Category (or type a new name): ").strip()
+                if answer:
+                    target = answer; saved[identity] = target; changed = True
+            else:
+                target = "New / uncategorized configuration"
+        output.append(Mapping(item.mode, item.key, item.description, target, item.source, item.context))
+    if changed:
+        CATEGORY_FILE.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+        print(f"Saved category choices: {CATEGORY_FILE}")
+    return output
 
 
 def extract_tools() -> list[tuple[str, str]]:
@@ -320,6 +369,14 @@ def page_header(title: str, eyebrow: str, count: int) -> str:
     return f"<header><div><p class='eyebrow'>{html.escape(eyebrow)}</p><h1 class='{title_class.strip()}'>{html.escape(title)}</h1></div><div class='meta'>Collin’s setup • Leader = Space<br><b>Last regenerated: {date.today().isoformat()}</b><br>{count} configured mappings</div></header><div class='rule'></div>"
 
 
+def teaching_page(title: str, subtitle: str, columns: list[tuple[str, list[tuple[str, str]]]], note: str, highlights: list[Mapping], count: int) -> str:
+    cards = "".join(f"<div class='teach-card'><h2>{html.escape(heading)}</h2><table><tbody>" + "".join(f"<tr><td>{keycaps(key)}</td><td>{html.escape(action)}</td></tr>" for key, action in rows) + "</tbody></table></div>" for heading, rows in columns)
+    current = ""
+    if highlights:
+        current = "<div class='current'><b>Your current configuration</b><table><thead><tr><th>Key</th><th>Action</th><th>Context</th></tr></thead><tbody>" + "".join(f"<tr><td>{keycaps(row.key)}</td><td>{html.escape(row.description)}</td><td>{html.escape(row.context)}</td></tr>" for row in highlights[:6]) + "</tbody></table></div>"
+    return f"<section>{page_header(title,'BUILT-IN VIM LANGUAGE + YOUR CONFIGURATION',count)}<div class='teach-grid'>{cards}</div><div class='callout'>{html.escape(note)}</div>{current}</section>"
+
+
 def build_html(entries: list[Mapping], tools: list[tuple[str, str]], runtime_count: int, runtime_note: str) -> str:
     grouped: dict[str, list[Mapping]] = defaultdict(list)
     for entry in entries: grouped[entry.category].append(entry)
@@ -331,14 +388,22 @@ def build_html(entries: list[Mapping], tools: list[tuple[str, str]], runtime_cou
     ])
     cover_header = page_header("Neovim\nComplete\nField Guide", "BUILT-INS + YOUR VERIFIED CONFIGURATION", len(entries))
     pages = [f"""<section class='cover'>{cover_header}<p class='lede'>A practical, searchable map of the Vim language and the mappings declared in this checkout. Every custom row below is rebuilt from the current Lua configuration—new or changed keys replace the old documentation.</p><div class='quick-grid'>{quick}</div><div class='callout'><b>How to read this:</b> <em>Space f f</em> means press Space, then f, then f. Context labels identify keys that only appear in Markdown, NvimTree, dashboard, or LSP-attached buffers.</div><p class='audit'>{html.escape(runtime_note)}: {runtime_count} described runtime mappings observed. The source inventory is the published command truth; runtime data is used as a cross-check.</p></section>"""]
-    for title, rows in ESSENTIALS.items():
-        pages.append(f"<section>{page_header(title,'BUILT-IN VIM LANGUAGE',len(entries))}<table><thead><tr><th>Mode</th><th>Key</th><th>Definition / action</th></tr></thead><tbody>{reference_rows(rows)}</tbody></table></section>")
+    core_categories = [
+        ["Personal Controls"], ["UI & Editing"], ["Find & Navigate"], ["Buffers & Windows", "Workspaces & Sessions"],
+        ["Git", "LSP, Completion & Diagnostics"], ["Markdown"], ["UI & Editing"], ["Dashboard", "Workspaces & Sessions", "Personal Controls"],
+        ["Testing", "Debugging", "LSP, Completion & Diagnostics"],
+    ]
+    for index, (title, subtitle, columns, note) in enumerate(CORE_SECTIONS):
+        highlights = [row for name in core_categories[index] for row in grouped.get(name, [])]
+        pages.append(teaching_page(title, subtitle, columns, note, highlights, len(entries)))
+    index_cards = "".join(f"<div class='index-card'><b>{html.escape(title)}</b><p>{html.escape(words)}</p></div>" for title, words in INDEX_PROMPTS)
+    pages.append(f"<section>{page_header('Ctrl+F index','FIND THE COMMAND BY WHAT YOU WANT TO DO',len(entries))}<p class='lede'>Search this PDF for an exact key string or an ordinary word. The guide repeats literal keys in the teaching sections and keeps a complete generated appendix after them.</p><div class='index-grid'>{index_cards}</div><div class='callout'><b>Discover anything else:</b> Space f k opens searchable active keymaps. <code>:help keyword</code> explains built-ins; <code>:map</code>, <code>:nmap</code>, and <code>:imap</code> inspect mappings directly; <code>:checkhealth</code> diagnoses the setup.</div></section>")
     tool_parts = (len(tools) + 17) // 18
     tool_chunk_size = (len(tools) + tool_parts - 1) // tool_parts
     for start in range(0, len(tools), tool_chunk_size):
         chunk = tools[start:start + tool_chunk_size]
         suffix = "" if start == 0 else f" · part {start // tool_chunk_size + 1} of {tool_parts}"
-        pages.append(f"<section>{page_header('Configured Tooling' + suffix,'YOUR CURRENT CONFIGURATION',len(entries))}<p class='section-note'>Declared integrations are listed even when they do not expose a direct user mapping.</p><table><thead><tr><th>Tool / plugin</th><th>Status</th><th>Configuration source</th></tr></thead><tbody>{tool_rows(chunk)}</tbody></table></section>")
+        pages.append(f"<section>{page_header('Configured Tooling' + suffix,'COMPLETE GENERATED APPENDIX',len(entries))}<p class='section-note'>Declared integrations are listed even when they do not expose a direct user mapping.</p><table><thead><tr><th>Tool / plugin</th><th>Status</th><th>Configuration source</th></tr></thead><tbody>{tool_rows(chunk)}</tbody></table></section>")
     for title in sorted(grouped):
         rows = grouped[title]
         sources = html.escape(', '.join(sorted({row.source for row in rows})))
@@ -349,9 +414,9 @@ def build_html(entries: list[Mapping], tools: list[tuple[str, str]], runtime_cou
         for start in range(0, len(rows), chunk_size):
             chunk = rows[start:start + chunk_size]
             suffix = "" if start == 0 else f" · part {start // chunk_size + 1} of {parts}"
-            pages.append(f"<section>{page_header(title + suffix,'YOUR CURRENT CONFIGURATION',len(entries))}<p class='section-note'>Extracted from <code>{sources}</code>.</p><table><thead><tr><th>Mode</th><th>Key</th><th>Action</th><th>Context</th></tr></thead><tbody>{mapping_rows(chunk)}</tbody></table></section>")
+            pages.append(f"<section>{page_header(title + suffix,'COMPLETE GENERATED APPENDIX',len(entries))}<p class='section-note'>Extracted from <code>{sources}</code>.</p><table><thead><tr><th>Mode</th><th>Key</th><th>Action</th><th>Context</th></tr></thead><tbody>{mapping_rows(chunk)}</tbody></table></section>")
     return f"""<!doctype html><html><head><meta charset='utf-8'><title>Neovim Complete Field Guide</title><style>
-@page{{size:letter landscape;margin:.42in;background:#090f17}}*{{box-sizing:border-box}}body{{margin:0;background:#090f17;color:#e7edf5;font:11pt/1.3 Arial,sans-serif}}section{{min-height:7.4in;position:relative;page-break-after:always;padding-bottom:.28in}}header{{display:flex;justify-content:space-between;align-items:flex-start}}.eyebrow{{color:#46e3d8;font-size:9pt;font-weight:bold;letter-spacing:1.8px;margin:0 0 5px}}h1{{white-space:pre-line;color:#f5f8fc;font-size:31pt;line-height:.97;margin:0}}h1.compact{{font-size:24pt;line-height:1.05}}.meta{{color:#b7c8d6;text-align:right;font-size:9pt;line-height:1.55}}.meta b{{color:#d5f5f3}}.rule{{height:3px;background:#35d4d1;margin:16px 0}}.lede{{font-size:14pt;max-width:8.5in;color:#d5e1ed;margin:0 0 17px}}.quick-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}.quick{{display:flex;gap:12px;background:#102331;border:1px solid #285e76;border-radius:8px;padding:13px;min-height:92px}}.quick span{{color:#49ddd6;font-size:25pt;font-weight:bold;line-height:1}}.quick b{{color:#eaf5ff;font-size:13pt}}.quick p{{margin:4px 0 0;color:#c4d1dd}}.callout{{margin-top:15px;padding:13px;background:#123d43;border-left:5px solid #20d5ae;color:#d8f6ef}}.audit{{position:absolute;bottom:0;color:#aabccc;font-size:8.5pt}}h2{{color:#55e3d7;letter-spacing:1px}}.section-note{{color:#b9cad8;margin:0 0 10px}}code{{color:#c9f3f4}}table{{width:100%;border-collapse:collapse;font-size:9.3pt}}th{{background:#14394d;color:#dffaff;text-align:left;padding:7px}}td{{border:1px solid #28556a;padding:7px;vertical-align:top}}tr:nth-child(even){{background:#0d1d2b}}kbd{{background:#183c50;border:1px solid #4183a1;border-radius:4px;color:#c9f7fb;font:bold 9pt monospace;padding:3px 5px;white-space:nowrap}}footer{{position:fixed;bottom:.12in;right:.42in;color:#aabccc;font-size:8pt}}</style></head><body>{''.join(pages)}<footer>Neovim Field Guide • Ctrl-F searchable • source-driven regeneration</footer></body></html>"""
+@page{{size:letter landscape;margin:.42in;background:#090f17}}*{{box-sizing:border-box}}body{{margin:0;background:#090f17;color:#e7edf5;font:11pt/1.3 Arial,sans-serif}}section{{min-height:7.4in;position:relative;page-break-after:always;padding-bottom:.28in}}header{{display:flex;justify-content:space-between;align-items:flex-start}}.eyebrow{{color:#46e3d8;font-size:9pt;font-weight:bold;letter-spacing:1.8px;margin:0 0 5px}}h1{{white-space:pre-line;color:#f5f8fc;font-size:31pt;line-height:.97;margin:0}}h1.compact{{font-size:24pt;line-height:1.05}}.meta{{color:#b7c8d6;text-align:right;font-size:9pt;line-height:1.55}}.meta b{{color:#d5f5f3}}.rule{{height:3px;background:#35d4d1;margin:16px 0}}.lede{{font-size:14pt;max-width:8.5in;color:#d5e1ed;margin:0 0 17px}}.quick-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}.teach-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}}.teach-card{{background:#102331;border:1px solid #285e76;border-radius:8px;padding:9px}}.teach-card h2{{font-size:11pt;margin:0 0 6px;color:#65e6dc}}.teach-card table{{font-size:8.5pt}}.teach-card td{{padding:5px}}.current{{margin-top:11px}}.current b{{color:#65e6dc}}.current table{{font-size:8.5pt;margin-top:5px}}.index-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}}.index-card{{background:#102331;border:1px solid #285e76;border-radius:8px;padding:13px;min-height:86px}}.index-card b{{color:#65e6dc;font-size:12pt}}.index-card p{{color:#c4d1dd;margin:6px 0 0}}.quick{{display:flex;gap:12px;background:#102331;border:1px solid #285e76;border-radius:8px;padding:13px;min-height:92px}}.quick span{{color:#49ddd6;font-size:25pt;font-weight:bold;line-height:1}}.quick b{{color:#eaf5ff;font-size:13pt}}.quick p{{margin:4px 0 0;color:#c4d1dd}}.callout{{margin-top:15px;padding:13px;background:#123d43;border-left:5px solid #20d5ae;color:#d8f6ef}}.audit{{position:absolute;bottom:0;color:#aabccc;font-size:8.5pt}}h2{{color:#55e3d7;letter-spacing:1px}}.section-note{{color:#b9cad8;margin:0 0 10px}}code{{color:#c9f3f4}}table{{width:100%;border-collapse:collapse;font-size:9.3pt}}th{{background:#14394d;color:#dffaff;text-align:left;padding:7px}}td{{border:1px solid #28556a;padding:7px;vertical-align:top}}tr:nth-child(even){{background:#0d1d2b}}kbd{{background:#183c50;border:1px solid #4183a1;border-radius:4px;color:#c9f7fb;font:bold 9pt monospace;padding:3px 5px;white-space:nowrap}}footer{{position:fixed;bottom:.12in;right:.42in;color:#aabccc;font-size:8pt}}</style></head><body>{''.join(pages)}<footer>Neovim Field Guide • Ctrl-F searchable • source-driven regeneration</footer></body></html>"""
 
 
 def render(html_path: Path, pdf_path: Path) -> None:
@@ -367,8 +432,9 @@ def render(html_path: Path, pdf_path: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skip-runtime-audit", action="store_true", help="Do not launch Neovim for the runtime cross-check.")
+    parser.add_argument("--non-interactive", action="store_true", help="Put unmapped categories in the temporary appendix instead of prompting.")
     args = parser.parse_args()
-    entries = extract_mappings()
+    entries = apply_saved_categories(extract_mappings(), interactive=not args.non_interactive)
     tools = extract_tools()
     if not entries: raise RuntimeError(f"No described mappings found under {LUA}")
     if not tools: raise RuntimeError(f"No configured tools found under {LUA}")
