@@ -89,7 +89,7 @@ def build_stamp_html() -> str:
     return f"""<!doctype html><html><head><meta charset='utf-8'><style>
 @page {{ size: letter landscape; margin: 0; }}
 body {{ margin: 0; background: transparent; font-family: Arial, sans-serif; }}
-.stamp {{ position: fixed; top: .48in; left: 3.25in; color: #b6c9d8; font-size: 9.5pt; letter-spacing: .15px; }}
+.stamp {{ position: fixed; top: .10in; right: .43in; color: #b6c9d8; font-size: 8.5pt; letter-spacing: .15px; }}
 </style></head><body><div class='stamp'>{stamp}</div></body></html>"""
 
 def stamp_first_page() -> None:
