@@ -57,7 +57,7 @@ Unknown mappings are then placed in **New / uncategorized configuration** in the
 
 ## Runtime audit
 
-A normal run starts this checkout headlessly and separately counts described global, Markdown-buffer, and NvimTree-buffer mappings. It also reports whether an LSP client attached; LSP-specific rows remain labeled from their source configuration if no server is available in the isolated check. The **published mapping inventory remains the Lua source scan**, which prevents unrelated plugin defaults from becoming misleading entries.
+A normal run starts this checkout headlessly, captures all **described active mappings** from global, Markdown-buffer, and NvimTree-buffer contexts, and cross-checks them against the Lua scan. Source rows provide the curated categories; active runtime-only extension rows appear in the **Runtime-discovered keymaps** appendix. This keeps every explicitly configured mapping plus active, named extension mappings findable without filling the guide with undocumented Vim defaults. It also reports whether an LSP client attached; LSP-specific source rows remain labeled when no server is available in the isolated check.
 
 If you only need a fast source-only rebuild:
 
