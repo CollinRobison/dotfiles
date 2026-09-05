@@ -38,6 +38,9 @@ On every normal run, the script scans every Lua file under `nvim/lua/` for user-
 - local `map(lhs, rhs, desc)` helpers used by debugger/test configuration
 - configured Dashboard launcher and Mkdnflow data mappings that do not use a `desc` option
 - plugins, LSP servers, DAP adapters, declared executables, Markdown formatters, and Markdown linters
+- direct user-facing `:` command entry points from custom `nvim_create_user_command` definitions and configured `<cmd>…<CR>` calls
+
+The generated tooling inventory explains capabilities in plain English—including behavior that runs automatically or has no dedicated mapping—and the **Commands & automatic behavior** appendix makes those entry points searchable.
 
 Rows are grouped by the source feature (for example: Find & Navigate, Git, Debugging, Testing, Markdown, NvimTree, and LSP/Completion). Each row carries its mode and context, so mappings that only work in a Markdown, NvimTree, dashboard, or LSP-attached buffer are labeled clearly.
 

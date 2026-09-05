@@ -327,6 +327,54 @@ def extract_tools() -> list[tuple[str, str]]:
     return sorted(tools, key=lambda item: item[0].lower())
 
 
+def describe_command(command: str) -> str:
+    """Explain source-declared command entry points in reader-facing language."""
+    lower = command.lower()
+    exact = {
+        "bdelete": "Close the current buffer without quitting Neovim.", "BufferLineCycleNext": "Select the next buffer in the buffer line.", "BufferLineCyclePrev": "Select the previous buffer in the buffer line.",
+        "BufferLinePick": "Show letter labels so you can jump directly to an open buffer.", "ene": "Open a new empty buffer.", "IBLToggle": "Show or hide indentation guides.",
+        "IBLToggleScope": "Show or hide the current indentation scope highlight.", "qa": "Quit all Neovim windows.", "TodoQuickFix": "Collect TODO-style comments in the quickfix list.",
+        "TodoLocList": "Collect TODO-style comments in the current window’s location list.", "MkdnFollowLink": "Open the Markdown link under the cursor.", "MkdnNextLink": "Jump to the next Markdown link.",
+        "MkdnPrevLink": "Jump to the previous Markdown link.", "MkdnTableFormat": "Align and format the Markdown table at the cursor.", "MkdnToggleToDo": "Toggle the Markdown task checkbox at the cursor.",
+        "MkdnFoldSection": "Fold the Markdown section at the cursor.", "MkdnUnfoldSection": "Unfold the Markdown section at the cursor.",
+    }
+    if command in exact:
+        return exact[command]
+    known = {
+        "masoninstalldebugadapters": "Install the debugger adapters configured for this Neovim setup.",
+        "telescope": "Open a searchable picker; the following argument selects files, text, help, Git, or another source.",
+        "nvimtreetoggle": "Open or close the file explorer.",
+        "lazygit": "Open the terminal Git interface for the repository.",
+        "autosession": "Save, search, or restore an editor workspace session.",
+        "markview": "Toggle rendered Markdown, hybrid view, or a preview split.",
+        "mkdn": "Use Mkdnflow to navigate Markdown links and edit tasks, tables, or headings.",
+        "test": "Run the configured test target (nearest test, file, or suite).",
+        "dap": "Control a debug session, breakpoints, stepping, and inspection.",
+        "conform": "Inspect or invoke configured formatting behavior.",
+        "lazy": "Open the plugin manager.",
+    }
+    for needle, description in known.items():
+        if needle in lower:
+            return description
+    return "User-facing command declared by this configuration; run it after typing a colon in Normal mode."
+
+
+def extract_commands() -> list[tuple[str, str, str]]:
+    """Collect direct :command entry points declared in current Lua source."""
+    commands: dict[str, tuple[str, str]] = {}
+    for path in sorted(LUA.rglob("*.lua")):
+        text = path.read_text(errors="replace")
+        for name in re.findall(r'nvim_create_user_command\(\s*["\']([^"\']+)', text):
+            commands[name] = (describe_command(name), path.name)
+        for name in re.findall(r'<cmd>([A-Za-z][A-Za-z0-9]+)', text):
+            commands.setdefault(name, (describe_command(name), path.name))
+    return [(name, description, source) for name, (description, source) in sorted(commands.items(), key=lambda item: item[0].lower())]
+
+
+def command_rows(items: list[tuple[str, str, str]]) -> str:
+    return "".join(f"<tr><td><code>:{html.escape(name)}</code></td><td>{html.escape(description)}</td><td><code>{html.escape(source)}</code></td></tr>" for name, description, source in items)
+
+
 def runtime_description(desc: str, rhs: str) -> str:
     """Turn runtime map metadata into a reader-facing action where possible."""
     if desc.startswith(":help "):
@@ -420,7 +468,7 @@ def teaching_page(title: str, subtitle: str, columns: list[tuple[str, list[tuple
     return f"<section>{page_header(title,'BUILT-IN VIM LANGUAGE + YOUR CONFIGURATION',count)}<div class='teach-grid'>{cards}</div><div class='callout'>{html.escape(note)}</div>{current}</section>"
 
 
-def build_html(entries: list[Mapping], tools: list[tuple[str, str]], runtime_count: int, runtime_note: str) -> str:
+def build_html(entries: list[Mapping], tools: list[tuple[str, str]], commands: list[tuple[str, str, str]], runtime_count: int, runtime_note: str) -> str:
     grouped: dict[str, list[Mapping]] = defaultdict(list)
     for entry in entries: grouped[entry.category].append(entry)
     quick = "".join([
@@ -447,6 +495,12 @@ def build_html(entries: list[Mapping], tools: list[tuple[str, str]], runtime_cou
         chunk = tools[start:start + tool_chunk_size]
         suffix = "" if start == 0 else f" · part {start // tool_chunk_size + 1} of {tool_parts}"
         pages.append(f"<section>{page_header('Configured Tooling' + suffix,'COMPLETE GENERATED APPENDIX',len(entries))}<p class='section-note'>Declared integrations are listed even when they do not expose a direct user mapping.</p><table><thead><tr><th>Tool / plugin</th><th>What it enables</th><th>Configuration source</th></tr></thead><tbody>{tool_rows(chunk)}</tbody></table></section>")
+    command_parts = max(1, (len(commands) + 11) // 12)
+    command_chunk_size = max(1, (len(commands) + command_parts - 1) // command_parts)
+    for start in range(0, len(commands), command_chunk_size):
+        chunk = commands[start:start + command_chunk_size]
+        suffix = "" if start == 0 else f" · part {start // command_chunk_size + 1} of {command_parts}"
+        pages.append(f"<section>{page_header('Commands & automatic behavior' + suffix,'COMPLETE GENERATED APPENDIX',len(entries))}<p class='section-note'>Type these after <code>:</code> in Normal mode. The tooling inventory explains capabilities that happen automatically or do not have a direct keybinding.</p><table><thead><tr><th>Command</th><th>What it does</th><th>Configuration source</th></tr></thead><tbody>{command_rows(chunk)}</tbody></table></section>")
     for title in sorted(grouped):
         rows = grouped[title]
         sources = html.escape(', '.join(sorted({row.source for row in rows})))
@@ -484,12 +538,14 @@ def main() -> int:
     source_entries.extend(item for item in runtime_entries if (item.mode, item.key, item.context) not in source_keys)
     entries = apply_saved_categories(source_entries, interactive=not args.non_interactive)
     tools = extract_tools()
+    commands = extract_commands()
     if not entries: raise RuntimeError(f"No mappings found under {LUA}")
     if not tools: raise RuntimeError(f"No configured tools found under {LUA}")
+    if not commands: raise RuntimeError(f"No user-facing commands found under {LUA}")
     DESKTOP.mkdir(parents=True, exist_ok=True); REPO_PDF.parent.mkdir(parents=True, exist_ok=True)
-    HTML_OUT.write_text(build_html(entries, tools, len(runtime_entries), runtime_note), encoding="utf-8")
+    HTML_OUT.write_text(build_html(entries, tools, commands, len(runtime_entries), runtime_note), encoding="utf-8")
     render(HTML_OUT, PDF_OUT); shutil.copy2(PDF_OUT, REPO_PDF)
-    print(f"Mappings: {len(entries)} (source {len(source_keys)}, runtime-only {len(entries) - len(source_keys)})\nTooling entries: {len(tools)}\n{runtime_note}: {len(runtime_entries)} active runtime mappings\nHTML: {HTML_OUT}\nPDF: {PDF_OUT}\nRepository PDF: {REPO_PDF}")
+    print(f"Mappings: {len(entries)} (source {len(source_keys)}, runtime-only {len(entries) - len(source_keys)})\nTooling entries: {len(tools)}\nCommands: {len(commands)}\n{runtime_note}: {len(runtime_entries)} active runtime mappings\nHTML: {HTML_OUT}\nPDF: {PDF_OUT}\nRepository PDF: {REPO_PDF}")
     return 0
 
 if __name__ == "__main__": raise SystemExit(main())
