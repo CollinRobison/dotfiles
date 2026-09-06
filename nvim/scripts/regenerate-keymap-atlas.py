@@ -432,6 +432,18 @@ def describe_tool(tool: str) -> str:
         "mkdnflow": "Follow links, manage tasks, tables, headings, and Markdown navigation.",
         "lazygit": "Open a terminal Git interface for status, commits, branches, and logs.",
         "auto-session": "Save and restore working layouts and open buffers.",
+        "image.nvim": "Display supported images inline in Neovim when the terminal graphics backend is available.",
+        "bufferline": "Show open buffers as a navigable tab-like strip.",
+        "nvim-autopairs": "Automatically insert and manage matching quotes, brackets, and parentheses while typing.",
+        "lualine": "Show file, Git, diagnostic, mode, and status information in the statusline.",
+        "indent-blankline": "Draw indentation guides and optionally highlight the current scope.",
+        "nvim-web-devicons": "Provide file-type icons to the file explorer, bufferline, Telescope, and status UI.",
+        "mini.icons": "Provide compact file-type icons to Neovim UI integrations.",
+        "treesitter": "Use syntax-aware parsing for highlighting, text objects, indentation, and code structure.",
+        "todo-comments": "Recognize TODO-style annotations and make them searchable through lists and Telescope.",
+        "alpha-nvim": "Show a start dashboard with shortcuts for files, projects, sessions, Git, and plugins.",
+        "which-key": "Display available keybinding continuations after a key prefix.",
+        "mason": "Install and manage external language servers, formatters, linters, and debug adapters.",
     }
     for needle, description in known.items():
         if needle in lowered: return description
