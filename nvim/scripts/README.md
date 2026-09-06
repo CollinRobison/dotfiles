@@ -136,6 +136,15 @@ uv run --with weasyprint weasyprint <html> <pdf>
 
 `uv` caches the temporary renderer environment after its first use.
 
+On macOS, install the native libraries used by WeasyPrint:
+
+```bash
+brew install pango
+```
+
+The generator automatically adds Homebrew's `lib` directory to
+`DYLD_FALLBACK_LIBRARY_PATH` when invoking WeasyPrint.
+
 ## Recommended workflow after a configuration change
 
 1. Change the relevant Lua configuration.

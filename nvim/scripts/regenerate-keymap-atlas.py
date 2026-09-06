@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -535,7 +536,20 @@ def render(html_path: Path, pdf_path: Path) -> None:
         uv = shutil.which("uv")
         if not uv: raise RuntimeError("Install weasyprint or uv to render the atlas.")
         command = [uv, "run", "--with", "weasyprint", "weasyprint", str(html_path), str(pdf_path)]
-    subprocess.run(command, check=True)
+
+    env = os.environ.copy()
+    if sys.platform == "darwin":
+        brew = shutil.which("brew")
+        if brew:
+            brew_prefix = subprocess.run([brew, "--prefix"], capture_output=True, text=True, check=False)
+            if brew_prefix.returncode == 0:
+                brew_lib = Path(brew_prefix.stdout.strip()) / "lib"
+                if brew_lib.is_dir():
+                    env["DYLD_FALLBACK_LIBRARY_PATH"] = os.pathsep.join(
+                        filter(None, [str(brew_lib), env.get("DYLD_FALLBACK_LIBRARY_PATH")])
+                    )
+
+    subprocess.run(command, check=True, env=env)
 
 
 def main() -> int:
