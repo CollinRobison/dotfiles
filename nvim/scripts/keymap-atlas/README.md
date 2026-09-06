@@ -150,7 +150,13 @@ uv run --with weasyprint weasyprint <html> <pdf>
 
 `uv` caches the temporary renderer environment after its first use.
 
-On macOS, install the native libraries used by WeasyPrint:
+On macOS, the renderer needs Homebrew’s native text libraries. `pango` is now declared in this repository’s `Brew/Brewfile`, so the preferred managed installation is:
+
+```bash
+brew bundle --file Brew/Brewfile
+```
+
+For a one-off installation instead:
 
 ```bash
 brew install pango
