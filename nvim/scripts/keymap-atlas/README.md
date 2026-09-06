@@ -1,6 +1,6 @@
 # Neovim Field Guide Generator
 
-`regenerate-keymap-atlas.py` builds the searchable **Neovim Complete Field Guide** from the configuration in this checkout. It is a source-driven renderer: it does **not** copy, append to, or depend on a frozen PDF.
+`regenerate-keymap-atlas.py` builds the searchable **Neovim Complete Field Guide** from the configuration in this checkout. The entire atlas project lives in `nvim/scripts/keymap-atlas/`; it is a source-driven renderer: it does **not** copy, append to, or depend on a frozen PDF.
 
 The guide combines three things:
 
@@ -15,10 +15,10 @@ A later run replaces changed entries and discovers newly supported configuration
 From the dotfiles repository root:
 
 ```bash
-python3 nvim/scripts/regenerate-keymap-atlas.py
+python3 nvim/scripts/keymap-atlas/regenerate-keymap-atlas.py
 ```
 
-Or from `nvim/scripts/`:
+Or from `nvim/scripts/keymap-atlas/`:
 
 ```bash
 python3 regenerate-keymap-atlas.py
@@ -28,13 +28,18 @@ The script resolves repository paths relative to itself, not to the shell’s cu
 
 ## Outputs
 
-Every successful run overwrites these generated artifacts:
+Every successful run overwrites the versioned PDF:
+
+| Artifact | Location |
+|---|---|
+| Versioned PDF | `nvim/docs/Nvim-Dark-Complete-Atlas.pdf` |
+
+Desktop artifacts are opt-in. Add `--desktop-artifacts` when you also want:
 
 | Artifact | Location |
 |---|---|
 | HTML preview | `~/Desktop/Nvim-Dark-Complete-Atlas.html` |
 | PDF preview | `~/Desktop/Nvim-Dark-Complete-Atlas.pdf` |
-| Versioned PDF | `nvim/docs/Nvim-Dark-Complete-Atlas.pdf` |
 
 The PDF is letter landscape, searchable, and shows **Last regenerated: YYYY-MM-DD** in the page-one top-right metadata.
 
@@ -43,6 +48,15 @@ The PDF is letter landscape, searchable, and shows **Last regenerated: YYYY-MM-D
 ```text
 --non-interactive      Do not prompt for unknown mapping categories.
 --skip-runtime-audit   Skip the headless-Neovim runtime cross-check.
+--desktop-artifacts    Also write HTML and PDF preview files to ~/Desktop.
+```
+
+### Desktop previews
+
+The default build creates only the versioned `nvim/docs/Nvim-Dark-Complete-Atlas.pdf`. To also leave HTML/PDF previews on the Desktop, request them explicitly:
+
+```bash
+python3 nvim/scripts/keymap-atlas/regenerate-keymap-atlas.py --desktop-artifacts
 ```
 
 ### Unattended regeneration
@@ -50,7 +64,7 @@ The PDF is letter landscape, searchable, and shows **Last regenerated: YYYY-MM-D
 Use this in a non-interactive shell, CI, or hook:
 
 ```bash
-python3 nvim/scripts/regenerate-keymap-atlas.py --non-interactive
+python3 nvim/scripts/keymap-atlas/regenerate-keymap-atlas.py --non-interactive
 ```
 
 Unknown source mappings are rendered in **New / uncategorized configuration** rather than blocking the build.
@@ -58,7 +72,7 @@ Unknown source mappings are rendered in **New / uncategorized configuration** ra
 ### Fast source-only regeneration
 
 ```bash
-python3 nvim/scripts/regenerate-keymap-atlas.py --skip-runtime-audit
+python3 nvim/scripts/keymap-atlas/regenerate-keymap-atlas.py --skip-runtime-audit
 ```
 
 This still parses the Lua source and produces the PDF; it simply omits the headless runtime observation.
@@ -141,9 +155,9 @@ uv run --with weasyprint weasyprint <html> <pdf>
 1. Change the relevant Lua configuration.
 2. Regenerate the guide:
    ```bash
-   python3 nvim/scripts/regenerate-keymap-atlas.py
+   python3 nvim/scripts/keymap-atlas/regenerate-keymap-atlas.py
    ```
-3. Confirm the new/changed literal key, command, capability, or tool is searchable in the Desktop PDF.
+3. Open `nvim/docs/Nvim-Dark-Complete-Atlas.pdf` and use `Ctrl+F` for a literal key or plain-English action. Add `--desktop-artifacts` if you also want a Desktop copy.
 4. Check that its mode/context and reader-facing description are accurate.
 5. Visually inspect the relevant teaching and appendix pages for table/keycap collisions or clipping.
 6. Commit the generated PDF, generator changes (when applicable), and README/category updates together.
@@ -151,8 +165,8 @@ uv run --with weasyprint weasyprint <html> <pdf>
 ## Verification commands
 
 ```bash
-python3 -m py_compile nvim/scripts/regenerate-keymap-atlas.py nvim/scripts/atlas_guide_content.py
-python3 nvim/scripts/regenerate-keymap-atlas.py --non-interactive
+python3 -m py_compile nvim/scripts/keymap-atlas/regenerate-keymap-atlas.py nvim/scripts/keymap-atlas/atlas_guide_content.py
+python3 nvim/scripts/keymap-atlas/regenerate-keymap-atlas.py --non-interactive
 pdfinfo nvim/docs/Nvim-Dark-Complete-Atlas.pdf
 pdftotext -layout nvim/docs/Nvim-Dark-Complete-Atlas.pdf /tmp/nvim-atlas.txt
 git diff --check

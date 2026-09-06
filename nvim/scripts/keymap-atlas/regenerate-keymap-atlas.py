@@ -2,7 +2,7 @@
 """Build a source-driven, searchable Neovim field guide.
 
 Run from the dotfiles root:
-    python3 nvim/scripts/regenerate-keymap-atlas.py
+    python3 nvim/scripts/keymap-atlas/regenerate-keymap-atlas.py
 
 The document is regenerated from the current Lua configuration. Built-in Vim
 reference material is intentionally stable; every configured mapping is parsed
@@ -26,7 +26,7 @@ from pathlib import Path
 
 from atlas_guide_content import CORE_SECTIONS, INDEX_PROMPTS
 
-NVIM = Path(__file__).resolve().parents[1]
+NVIM = Path(__file__).resolve().parents[2]
 LUA = NVIM / "lua"
 DESKTOP = Path.home() / "Desktop"
 HTML_OUT = DESKTOP / "Nvim-Dark-Complete-Atlas.html"
@@ -525,7 +525,7 @@ def build_html(entries: list[Mapping], tools: list[tuple[str, str]], commands: l
             suffix = "" if start == 0 else f" · part {start // chunk_size + 1} of {parts}"
             pages.append(f"<section>{page_header(title + suffix,'COMPLETE GENERATED APPENDIX',len(entries))}<p class='section-note'>Extracted from <code>{sources}</code>.</p><table><thead><tr><th>Mode</th><th>Key</th><th>Action</th><th>Context</th></tr></thead><tbody>{mapping_rows(chunk)}</tbody></table></section>")
     return f"""<!doctype html><html><head><meta charset='utf-8'><title>Neovim Complete Field Guide</title><style>
-@page{{size:letter landscape;margin:.42in;background:#090f17}}*{{box-sizing:border-box}}body{{margin:0;background:#090f17;color:#e7edf5;font:11pt/1.3 Arial,sans-serif}}section{{min-height:7.4in;position:relative;page-break-after:always;padding-bottom:.28in}}header{{display:flex;justify-content:space-between;align-items:flex-start}}.eyebrow{{color:#46e3d8;font-size:9pt;font-weight:bold;letter-spacing:1.8px;margin:0 0 5px}}h1{{white-space:pre-line;color:#f5f8fc;font-size:31pt;line-height:.97;margin:0}}h1.compact{{font-size:24pt;line-height:1.05}}.meta{{color:#b7c8d6;text-align:right;font-size:9pt;line-height:1.55}}.meta b{{color:#d5f5f3}}.rule{{height:3px;background:#35d4d1;margin:16px 0}}.lede{{font-size:14pt;max-width:8.5in;color:#d5e1ed;margin:0 0 17px}}.quick-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}.teach-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}}.teach-card{{background:#102331;border:1px solid #285e76;border-radius:8px;padding:9px}}.teach-card h2{{font-size:11pt;margin:0 0 6px;color:#65e6dc}}.teach-card table{{font-size:8.5pt}}.teach-card td{{padding:5px}}.teach-card td:first-child{{width:45%;min-width:140px;padding-right:9px}}.current{{margin-top:11px}}.current b{{color:#65e6dc}}.current table{{font-size:8.5pt;margin-top:5px}}.index-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}}.index-card{{background:#102331;border:1px solid #285e76;border-radius:8px;padding:13px;min-height:86px}}.index-card b{{color:#65e6dc;font-size:12pt}}.index-card p{{color:#c4d1dd;margin:6px 0 0}}.quick{{display:flex;gap:12px;background:#102331;border:1px solid #285e76;border-radius:8px;padding:13px;min-height:92px}}.quick span{{color:#49ddd6;font-size:25pt;font-weight:bold;line-height:1}}.quick b{{color:#eaf5ff;font-size:13pt}}.quick p{{margin:4px 0 0;color:#c4d1dd}}.callout{{margin-top:15px;padding:13px;background:#123d43;border-left:5px solid #20d5ae;color:#d8f6ef}}.audit{{margin:10px 0 0;color:#aabccc;font-size:8.5pt}}h2{{color:#55e3d7;letter-spacing:1px}}.section-note{{color:#b9cad8;margin:0 0 10px}}code{{color:#c9f3f4}}table{{width:100%;border-collapse:collapse;font-size:9.3pt}}th{{background:#14394d;color:#dffaff;text-align:left;padding:7px}}td{{border:1px solid #28556a;padding:7px;vertical-align:top;overflow-wrap:anywhere;word-break:normal}}tr:nth-child(even){{background:#0d1d2b}}kbd{{background:#183c50;border:1px solid #4183a1;border-radius:4px;color:#c9f7fb;font:bold 9pt monospace;padding:3px 5px;white-space:nowrap}}footer{{position:fixed;bottom:.12in;right:.42in;color:#aabccc;font-size:8pt}}</style></head><body>{''.join(pages)}<footer>Neovim Field Guide • Ctrl-F searchable • source-driven regeneration</footer></body></html>"""
+@page{{size:letter landscape;margin:.42in;background:#090f17}}*{{box-sizing:border-box}}body{{margin:0;background:#090f17;color:#e7edf5;font:11pt/1.3 Arial,sans-serif}}section{{min-height:7.4in;position:relative;page-break-after:always;padding-bottom:.28in}}header{{display:flex;justify-content:space-between;align-items:flex-start}}.eyebrow{{color:#46e3d8;font-size:9pt;font-weight:bold;letter-spacing:1.8px;margin:0 0 5px}}h1{{white-space:pre-line;color:#f5f8fc;font-size:31pt;line-height:.97;margin:0}}h1.compact{{font-size:24pt;line-height:1.05}}.meta{{color:#b7c8d6;text-align:right;font-size:9pt;line-height:1.55}}.meta b{{color:#d5f5f3}}.rule{{height:3px;background:#35d4d1;margin:16px 0}}.lede{{font-size:14pt;max-width:8.5in;color:#d5e1ed;margin:0 0 17px}}.quick-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}.teach-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}}.teach-card{{background:#102331;border:1px solid #285e76;border-radius:8px;padding:9px}}.teach-card h2{{font-size:11pt;margin:0 0 6px;color:#65e6dc}}.teach-card table{{font-size:8.5pt}}.teach-card td{{padding:5px}}.teach-card td:first-child{{width:45%;min-width:140px;padding-right:9px}}.current{{margin-top:11px}}.current b{{color:#65e6dc}}.current table{{font-size:8.5pt;margin-top:5px}}.index-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}}.index-card{{background:#102331;border:1px solid #285e76;border-radius:8px;padding:13px;min-height:86px}}.index-card b{{color:#65e6dc;font-size:12pt}}.index-card p{{color:#c4d1dd;margin:6px 0 0}}.quick{{display:flex;gap:12px;background:#102331;border:1px solid #285e76;border-radius:8px;padding:13px;min-height:92px}}.quick span{{color:#49ddd6;font-size:25pt;font-weight:bold;line-height:1}}.quick b{{color:#eaf5ff;font-size:13pt}}.quick p{{margin:4px 0 0;color:#c4d1dd}}.callout{{margin-top:15px;padding:13px;background:#123d43;border-left:5px solid #20d5ae;color:#d8f6ef}}.audit{{margin:10px 0 0;color:#aabccc;font-size:8.5pt}}h2{{color:#55e3d7;letter-spacing:1px}}.section-note{{color:#b9cad8;margin:0 0 10px}}code{{color:#c9f3f4}}table{{width:100%;border-collapse:collapse;font-size:9.3pt}}th{{background:#14394d;color:#dffaff;text-align:left;padding:7px}}td{{border:1px solid #28556a;padding:7px;vertical-align:top;overflow-wrap:anywhere;word-break:normal}}tr:nth-child(even){{background:#0d1d2b}}kbd{{display:inline-block;line-height:1.2;margin:0 4px 0 0;vertical-align:middle;background:#183c50;border:1px solid #4183a1;border-radius:4px;color:#c9f7fb;font:bold 9pt monospace;padding:3px 5px;white-space:nowrap}}footer{{position:fixed;bottom:.12in;right:.42in;color:#aabccc;font-size:8pt}}</style></head><body>{''.join(pages)}<footer>Neovim Field Guide • Ctrl-F searchable • source-driven regeneration</footer></body></html>"""
 
 
 def render(html_path: Path, pdf_path: Path) -> None:
@@ -542,6 +542,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skip-runtime-audit", action="store_true", help="Do not launch Neovim for the runtime cross-check.")
     parser.add_argument("--non-interactive", action="store_true", help="Put unmapped categories in the temporary appendix instead of prompting.")
+    parser.add_argument("--desktop-artifacts", action="store_true", help="Also write HTML and PDF preview artifacts to ~/Desktop.")
     args = parser.parse_args()
     source_entries = extract_mappings()
     runtime_entries, runtime_note = ([], "Runtime audit skipped") if args.skip_runtime_audit else runtime_audit()
@@ -554,10 +555,22 @@ def main() -> int:
     if not entries: raise RuntimeError(f"No mappings found under {LUA}")
     if not tools: raise RuntimeError(f"No configured tools found under {LUA}")
     if not commands: raise RuntimeError(f"No user-facing commands found under {LUA}")
-    DESKTOP.mkdir(parents=True, exist_ok=True); REPO_PDF.parent.mkdir(parents=True, exist_ok=True)
-    HTML_OUT.write_text(build_html(entries, tools, commands, len(runtime_entries), runtime_note), encoding="utf-8")
-    render(HTML_OUT, PDF_OUT); shutil.copy2(PDF_OUT, REPO_PDF)
-    print(f"Mappings: {len(entries)} (source {len(source_keys)}, runtime-only {len(entries) - len(source_keys)})\nTooling entries: {len(tools)}\nCommands: {len(commands)}\n{runtime_note}: {len(runtime_entries)} active runtime mappings\nHTML: {HTML_OUT}\nPDF: {PDF_OUT}\nRepository PDF: {REPO_PDF}")
+    REPO_PDF.parent.mkdir(parents=True, exist_ok=True)
+    document = build_html(entries, tools, commands, len(runtime_entries), runtime_note)
+    desktop_lines: list[str] = []
+    if args.desktop_artifacts:
+        DESKTOP.mkdir(parents=True, exist_ok=True)
+        HTML_OUT.write_text(document, encoding="utf-8")
+        render(HTML_OUT, PDF_OUT)
+        shutil.copy2(PDF_OUT, REPO_PDF)
+        desktop_lines = [f"HTML: {HTML_OUT}", f"Desktop PDF: {PDF_OUT}"]
+    else:
+        with tempfile.TemporaryDirectory(prefix="nvim-atlas-render-") as temp:
+            temp_root = Path(temp); temp_html = temp_root / "atlas.html"; temp_pdf = temp_root / "atlas.pdf"
+            temp_html.write_text(document, encoding="utf-8")
+            render(temp_html, temp_pdf)
+            shutil.copy2(temp_pdf, REPO_PDF)
+    print("\n".join([f"Mappings: {len(entries)} (source {len(source_keys)}, runtime-only {len(entries) - len(source_keys)})", f"Tooling entries: {len(tools)}", f"Commands: {len(commands)}", f"{runtime_note}: {len(runtime_entries)} active runtime mappings", *desktop_lines, f"Repository PDF: {REPO_PDF}"]))
     return 0
 
 if __name__ == "__main__": raise SystemExit(main())
