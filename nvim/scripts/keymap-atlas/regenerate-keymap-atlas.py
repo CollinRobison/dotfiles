@@ -548,6 +548,12 @@ def render(html_path: Path, pdf_path: Path) -> None:
                     env["DYLD_FALLBACK_LIBRARY_PATH"] = os.pathsep.join(
                         filter(None, [str(brew_lib), env.get("DYLD_FALLBACK_LIBRARY_PATH")])
                     )
+    elif sys.platform == "win32":
+        msys_pango_bin = Path(r"C:\\msys64\\mingw64\\bin")
+        if msys_pango_bin.is_dir():
+            env["WEASYPRINT_DLL_DIRECTORIES"] = os.pathsep.join(
+                filter(None, [str(msys_pango_bin), env.get("WEASYPRINT_DLL_DIRECTORIES")])
+            )
 
     subprocess.run(command, check=True, env=env)
 

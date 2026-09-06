@@ -165,6 +165,18 @@ brew install pango
 The generator automatically adds Homebrew's `lib` directory to
 `DYLD_FALLBACK_LIBRARY_PATH` when invoking WeasyPrint.
 
+### Windows
+
+The simplest Windows path is the official WeasyPrint release executable, placed on `PATH` as `weasyprint.exe`; the generator invokes it the same way it invokes `weasyprint` elsewhere.
+
+For the Python/`uv` path, install Python plus [MSYS2](https://www.msys2.org/), then install Pango from an MSYS2 shell:
+
+```bash
+pacman -S mingw-w64-x86_64-pango
+```
+
+The renderer automatically adds the standard MSYS2 Pango directory, `C:\msys64\mingw64\bin`, to `WEASYPRINT_DLL_DIRECTORIES` when it exists. If MSYS2 is installed elsewhere, set that environment variable yourself to the directory containing the Pango DLLs before running the generator. WSL is also supported by following the Linux requirements above.
+
 ## Recommended workflow after a configuration change
 
 1. Change the relevant Lua configuration.
