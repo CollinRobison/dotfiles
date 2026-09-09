@@ -109,6 +109,16 @@ return {
     add_adapter("CTest", function()
       return require("neotest-ctest").setup({
         dap_adapter = "codelldb",
+        -- Do not let CTest claim every mixed-language Git repository.
+        root = function(path)
+          return vim.fs.root(path, {
+            "CMakeLists.txt",
+            "CMakePresets.json",
+            "compile_commands.json",
+            ".clangd",
+            ".clang-format",
+          })
+        end,
       })
     end)
 
