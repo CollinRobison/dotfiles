@@ -57,6 +57,18 @@ return {
       return require("neotest-python")({
         runner = "pytest",
         python = function(root)
+          local buffer_dir = vim.fn.expand("%:p:h")
+          if buffer_dir == "." or buffer_dir == "" then
+            buffer_dir = vim.fn.getcwd()
+          end
+          local virtualenv_dir = vim.fs.find(".venv", {
+            path = buffer_dir,
+            upward = true,
+            type = "directory",
+          })[1]
+          if virtualenv_dir and vim.fn.executable(virtualenv_dir .. "/bin/python") == 1 then
+            return virtualenv_dir .. "/bin/python"
+          end
           if vim.fn.executable(root .. "/.venv/bin/python") == 1 then
             return root .. "/.venv/bin/python"
           end

@@ -62,6 +62,29 @@ return {
     end
 
     local function python_command()
+      if vim.env.VIRTUAL_ENV then
+        local virtualenv = vim.env.VIRTUAL_ENV .. "/bin/python"
+        if vim.fn.executable(virtualenv) == 1 then
+          return virtualenv
+        end
+      end
+
+      local buffer_dir = vim.fn.expand("%:p:h")
+      if buffer_dir == "." or buffer_dir == "" then
+        buffer_dir = vim.fn.getcwd()
+      end
+      local virtualenv_dir = vim.fs.find(".venv", {
+        path = buffer_dir,
+        upward = true,
+        type = "directory",
+      })[1]
+      if virtualenv_dir then
+        local virtualenv = virtualenv_dir .. "/bin/python"
+        if vim.fn.executable(virtualenv) == 1 then
+          return virtualenv
+        end
+      end
+
       local root = vim.fs.root(0, {
         "pyproject.toml",
         "uv.lock",
@@ -102,6 +125,8 @@ return {
         args = { "-m", "debugpy.adapter" },
       })
     end
+    -- neotest-python uses the conventional `python` DAP adapter name.
+    dap.adapters.python = dap.adapters.debugpy
 
     dap.adapters["pwa-node"] = server_adapter("JavaScript debug adapter", "js-debug-adapter", {
       "${port}",
