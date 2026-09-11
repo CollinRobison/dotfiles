@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from atlas_guide_content import CORE_SECTIONS, INDEX_PROMPTS
+from atlas_guide_content import BUILTIN_COMMANDS, BUILTIN_FUNCTIONS, CORE_SECTIONS, INDEX_PROMPTS
 
 NVIM = Path(__file__).resolve().parents[2]
 LUA = NVIM / "lua"
@@ -338,6 +338,10 @@ def describe_command(command: str) -> str:
         "TodoLocList": "Collect TODO-style comments in the current window’s location list.", "MkdnFollowLink": "Open the Markdown link under the cursor.", "MkdnNextLink": "Jump to the next Markdown link.",
         "MkdnPrevLink": "Jump to the previous Markdown link.", "MkdnTableFormat": "Align and format the Markdown table at the cursor.", "MkdnToggleToDo": "Toggle the Markdown task checkbox at the cursor.",
         "MkdnFoldSection": "Fold the Markdown section at the cursor.", "MkdnUnfoldSection": "Unfold the Markdown section at the cursor.",
+        "Mason": "Open Mason's package manager.", "MasonInstall": "Install one or more Mason packages.",
+        "NvimTreeOpen": "Open the file explorer.", "NvimTreeToggle": "Open or close the file explorer.",
+        "TodoTelescope": "Search TODO-style comments in Telescope.", "normal": "Execute Normal-mode keys on the current line or range.",
+        "colorscheme": "Select the active colorscheme.", "tcd": "Change the current tab's working directory.",
     }
     if command in exact:
         return exact[command]
@@ -367,9 +371,66 @@ def extract_commands() -> list[tuple[str, str, str]]:
         text = path.read_text(errors="replace")
         for name in re.findall(r'nvim_create_user_command\(\s*["\']([^"\']+)', text):
             commands[name] = (describe_command(name), path.name)
-        for name in re.findall(r'<cmd>([A-Za-z][A-Za-z0-9]+)', text):
+        for name in re.findall(r'<cmd>([A-Za-z][A-Za-z0-9_]*)', text):
             commands.setdefault(name, (describe_command(name), path.name))
+        # Also cover commands invoked from Lua rather than embedded in a mapping.
+        for name in re.findall(r'vim\.cmd\.([A-Za-z][A-Za-z0-9_]*)\s*\(', text):
+            commands.setdefault(name, (describe_command(name), path.name))
+        for command in re.findall(r'vim\.cmd\(\s*["\']([A-Za-z][A-Za-z0-9_]*)', text):
+            commands.setdefault(command, (describe_command(command), path.name))
     return [(name, description, source) for name, (description, source) in sorted(commands.items(), key=lambda item: item[0].lower())]
+
+
+def describe_function(function: str) -> str:
+    """Describe a Lua/API call found in the configuration without guessing arguments."""
+    exact = {
+        "vim.cmd": "Run an Ex command from Lua.",
+        "vim.keymap.set": "Create a keymap with a description and optional buffer or mode.",
+        "vim.notify": "Show a Neovim notification.",
+        "vim.schedule": "Defer a callback until it is safe to update the UI.",
+        "vim.api.nvim_create_autocmd": "Run a callback when a Neovim event occurs.",
+        "vim.api.nvim_create_augroup": "Create or reset a named autocommand group.",
+        "vim.api.nvim_create_user_command": "Define a custom Ex command.",
+        "vim.diagnostic.open_float": "Show the diagnostic message at the cursor.",
+        "vim.diagnostic.jump": "Jump to a previous or next diagnostic.",
+        "vim.lsp.buf.format": "Format the current buffer through an LSP or formatter.",
+        "vim.lsp.buf.code_action": "Request available LSP fixes and refactors.",
+        "vim.lsp.completion.get": "Request completion items at the cursor.",
+        "vim.lsp.inlay_hint.enable": "Enable or disable inline type and parameter hints.",
+        'require("lint").try_lint': "Run configured linters and publish their findings as diagnostics.",
+        'require("conform").format': "Run the configured formatter.",
+    }
+    if function in exact:
+        return exact[function]
+    lowered = function.lower()
+    if lowered.startswith("vim.lsp.buf."):
+        return "Request a language-aware navigation, edit, or information action."
+    if lowered.startswith("vim.diagnostic."):
+        return "Read or navigate editor diagnostics."
+    if lowered.startswith("vim.fn."):
+        return "Call a built-in Vimscript function from Lua."
+    if lowered.startswith("vim.api."):
+        return "Call a Neovim API function from Lua."
+    if lowered.startswith("vim.fs."):
+        return "Inspect project files or roots from Lua."
+    if lowered.startswith('require("'):
+        return "Call a configured plugin API from Lua."
+    return "Lua/API function used by this configuration. See the source for its arguments."
+
+
+def extract_functions() -> list[tuple[str, str, str]]:
+    """Inventory callable Neovim and plugin APIs that the Lua configuration uses."""
+    functions: dict[str, tuple[str, str]] = {}
+    patterns = (
+        r'(?<![\w.])(vim(?:\.(?:api|cmd|diagnostic|fn|fs|json|keymap|lsp|notify|schedule|system|tbl|uv))?(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*\(',
+        r'(require\(["\'][^"\']+["\']\)(?:\.[A-Za-z_][A-Za-z0-9_]*)+)\s*\(',
+    )
+    for path in sorted(LUA.rglob("*.lua")):
+        text = path.read_text(errors="replace")
+        for pattern in patterns:
+            for name in re.findall(pattern, text):
+                functions.setdefault(name, (describe_function(name), path.name))
+    return [(name, description, source) for name, (description, source) in sorted(functions.items(), key=lambda item: item[0].lower())]
 
 
 def command_rows(items: list[tuple[str, str, str]]) -> str:
@@ -445,6 +506,7 @@ def describe_tool(tool: str) -> str:
         "alpha-nvim": "Show a start dashboard with shortcuts for files, projects, sessions, Git, and plugins.",
         "which-key": "Display available keybinding continuations after a key prefix.",
         "mason": "Install and manage external language servers, formatters, linters, and debug adapters.",
+        "nvim-lint": "Run configured linters and publish their findings as diagnostics; this setup does not apply markdownlint fixes automatically.",
     }
     for needle, description in known.items():
         if needle in lowered: return description
@@ -461,7 +523,18 @@ def tool_rows(items: list[tuple[str, str]]) -> str:
 
 
 def reference_rows(items: list[tuple[str, str, str]]) -> str:
-    return "".join(f"<tr><td>{html.escape(mode)}</td><td>{keycaps(key)}</td><td>{html.escape(desc)}</td></tr>" for mode,key,desc in items)
+    return "".join(f"<tr><td>{html.escape(category)}</td><td><code>{html.escape(entry)}</code></td><td>{html.escape(description)}</td></tr>" for category, entry, description in items)
+
+
+def function_rows(items: list[tuple[str, str, str]]) -> str:
+    return "".join(f"<tr><td><code>{html.escape(function)}</code></td><td>{html.escape(description)}</td><td><code>{html.escape(source)}</code></td></tr>" for function, description, source in items)
+
+
+def essential_entries(items: dict[str, list[tuple[str, str, str]]]) -> list[tuple[str, str, str]]:
+    rows = []
+    for section, entries in items.items():
+        rows.extend((section, key, desc) for mode, key, desc in entries)
+    return rows
 
 
 def quick_card(number: str, title: str, detail: str) -> str:
@@ -481,7 +554,7 @@ def teaching_page(title: str, subtitle: str, columns: list[tuple[str, list[tuple
     return f"<section>{page_header(title,'BUILT-IN VIM LANGUAGE + YOUR CONFIGURATION',count)}<div class='teach-grid'>{cards}</div><div class='callout'>{html.escape(note)}</div>{current}</section>"
 
 
-def build_html(entries: list[Mapping], tools: list[tuple[str, str]], commands: list[tuple[str, str, str]], runtime_count: int, runtime_note: str) -> str:
+def build_html(entries: list[Mapping], tools: list[tuple[str, str]], commands: list[tuple[str, str, str]], functions: list[tuple[str, str, str]], runtime_count: int, runtime_note: str) -> str:
     grouped: dict[str, list[Mapping]] = defaultdict(list)
     for entry in entries: grouped[entry.category].append(entry)
     quick = "".join([
@@ -508,6 +581,24 @@ def build_html(entries: list[Mapping], tools: list[tuple[str, str]], commands: l
         chunk = tools[start:start + tool_chunk_size]
         suffix = "" if start == 0 else f" · part {start // tool_chunk_size + 1} of {tool_parts}"
         pages.append(f"<section>{page_header('Configured Tooling' + suffix,'COMPLETE GENERATED APPENDIX',len(entries))}<p class='section-note'>Declared integrations are listed even when they do not expose a direct user mapping.</p><table><thead><tr><th>Tool / plugin</th><th>What it enables</th><th>Configuration source</th></tr></thead><tbody>{tool_rows(chunk)}</tbody></table></section>")
+    reference_pages = [
+        ("Essential Vim keys", essential_entries(ESSENTIALS), "The key language behind Normal, Visual, and Insert mode editing."),
+        ("Common Ex & plugin commands", BUILTIN_COMMANDS, "Commands are entered after : in Normal mode. Arguments in braces are placeholders; the final entries are plugin commands from this setup."),
+        ("Neovim Lua functions", BUILTIN_FUNCTIONS, "Use these inside Lua callbacks or with :lua. Parentheses show a callable example, not a mapping."),
+    ]
+    for title, reference, note in reference_pages:
+        parts = max(1, (len(reference) + 14) // 15)
+        chunk_size = max(1, (len(reference) + parts - 1) // parts)
+        for start in range(0, len(reference), chunk_size):
+            chunk = reference[start:start + chunk_size]
+            suffix = "" if start == 0 else f" · part {start // chunk_size + 1} of {parts}"
+            pages.append(f"<section>{page_header(title + suffix,'BUILT-IN REFERENCE',len(entries))}<p class='section-note'>{html.escape(note)}</p><table><thead><tr><th>Area</th><th>Command / function</th><th>What it does</th></tr></thead><tbody>{reference_rows(chunk)}</tbody></table></section>")
+    function_parts = max(1, (len(functions) + 17) // 18)
+    function_chunk_size = max(1, (len(functions) + function_parts - 1) // function_parts)
+    for start in range(0, len(functions), function_chunk_size):
+        chunk = functions[start:start + function_chunk_size]
+        suffix = "" if start == 0 else f" · part {start // function_chunk_size + 1} of {function_parts}"
+        pages.append(f"<section>{page_header('Functions used by this configuration' + suffix,'SOURCE-DISCOVERED REFERENCE',len(entries))}<p class='section-note'>Callable Neovim, Vimscript, and plugin APIs found in the Lua source. These are useful from <code>:lua</code> or inside a callback.</p><table><thead><tr><th>Function</th><th>What it does</th><th>Source</th></tr></thead><tbody>{function_rows(chunk)}</tbody></table></section>")
     command_parts = max(1, (len(commands) + 11) // 12)
     command_chunk_size = max(1, (len(commands) + command_parts - 1) // command_parts)
     for start in range(0, len(commands), command_chunk_size):
@@ -572,11 +663,12 @@ def main() -> int:
     entries = apply_saved_categories(source_entries, interactive=not args.non_interactive)
     tools = extract_tools()
     commands = extract_commands()
+    functions = extract_functions()
     if not entries: raise RuntimeError(f"No mappings found under {LUA}")
     if not tools: raise RuntimeError(f"No configured tools found under {LUA}")
     if not commands: raise RuntimeError(f"No user-facing commands found under {LUA}")
     REPO_PDF.parent.mkdir(parents=True, exist_ok=True)
-    document = build_html(entries, tools, commands, len(runtime_entries), runtime_note)
+    document = build_html(entries, tools, commands, functions, len(runtime_entries), runtime_note)
     desktop_lines: list[str] = []
     if args.desktop_artifacts:
         DESKTOP.mkdir(parents=True, exist_ok=True)
@@ -590,7 +682,7 @@ def main() -> int:
             temp_html.write_text(document, encoding="utf-8")
             render(temp_html, temp_pdf)
             shutil.copy2(temp_pdf, REPO_PDF)
-    print("\n".join([f"Mappings: {len(entries)} (source {len(source_keys)}, runtime-only {len(entries) - len(source_keys)})", f"Tooling entries: {len(tools)}", f"Commands: {len(commands)}", f"{runtime_note}: {len(runtime_entries)} active runtime mappings", *desktop_lines, f"Repository PDF: {REPO_PDF}"]))
+    print("\n".join([f"Mappings: {len(entries)} (source {len(source_keys)}, runtime-only {len(entries) - len(source_keys)})", f"Tooling entries: {len(tools)}", f"Commands: {len(commands)}", f"Functions: {len(functions)}", f"{runtime_note}: {len(runtime_entries)} active runtime mappings", *desktop_lines, f"Repository PDF: {REPO_PDF}"]))
     return 0
 
 if __name__ == "__main__": raise SystemExit(main())

@@ -110,10 +110,23 @@ Its **What it enables** column describes the user-facing capability, including f
 
 The **Commands & automatic behavior** appendix extracts direct user-facing command entry points from:
 
-- `vim.api.nvim_create_user_command(...)`; and
-- configured `<cmd>…<CR>` calls.
+- `vim.api.nvim_create_user_command(...)`;
+- configured `<cmd>…<CR>` calls; and
+- command calls made with `vim.cmd(...)` or `vim.cmd.command(...)`.
 
 It lists the literal `:Command` form, a plain-English explanation, and the source file. This includes custom setup commands such as `:MasonInstallDebugAdapters` as well as configured entry points for the file explorer, Telescope, sessions, Git, Markdown, tests, and UI tools.
+
+The source-discovered function appendix also inventories callable `vim.*`, `vim.api.*`, `vim.lsp.*`, `vim.diagnostic.*`, `vim.fn.*`, and `require("plugin").method(...)` APIs used by the configuration, with a plain-English description and source file.
+
+### Built-in reference
+
+The generated guide also includes stable reference pages for:
+
+- essential Vim motions, operators, text objects, registers, and mode keys;
+- common Ex commands such as `:setlocal`, `:verbose nmap`, `:copen`, and `:source`; and
+- Neovim Lua APIs for buffers, windows, autocommands, diagnostics, LSP, completion, and configured tools.
+
+These pages are intentionally separate from the source inventory, so searching for a command or function remains useful even when this configuration does not currently map it.
 
 ## Runtime audit
 
@@ -184,7 +197,7 @@ The renderer automatically adds the standard MSYS2 Pango directory, `C:\msys64\m
    ```bash
    python3 nvim/scripts/keymap-atlas/regenerate-keymap-atlas.py
    ```
-3. Open `nvim/docs/Nvim-Dark-Complete-Atlas.pdf` and use `Ctrl+F` for a literal key or plain-English action. Add `--desktop-artifacts` if you also want a Desktop copy.
+3. Open `nvim/docs/Nvim-Dark-Complete-Atlas.pdf` and use `Ctrl+F` for a literal key, plain-English action, or question term such as `misspelled word`, `spelling suggestion`, `markdownlint`, `lint warning`, `diagnostic`, `fix`, or `Prettier`. The Markdown recipes distinguish spelling suggestions, lint diagnostics, and formatting fixes. Add `--desktop-artifacts` if you also want a Desktop copy.
 4. Check that its mode/context and reader-facing description are accurate.
 5. Visually inspect the relevant teaching and appendix pages for table/keycap collisions or clipping.
 6. Commit the generated PDF, generator changes (when applicable), and README/category updates together.
