@@ -54,7 +54,7 @@ return {
       },
     })
 
-    vim.opt.completeopt = { "menu", "menuone", "noselect" }
+    vim.opt.completeopt = { "menu", "menuone", "noselect", "popup" }
 
     vim.lsp.config("basedpyright", {
       root_markers = {
@@ -66,6 +66,7 @@ return {
         "Pipfile",
         "poetry.lock",
         "uv.lock",
+        ".exercism",
         ".venv",
         ".git",
       },
@@ -186,6 +187,11 @@ return {
 
           vim.lsp.buf.format({ async = true })
         end, { buffer = event.buf, desc = "Format buffer" })
+
+        vim.keymap.set("n", "<leader>la", vim.lsp.buf.code_action, {
+          buffer = event.buf,
+          desc = "LSP code action",
+        })
       end,
     })
 
