@@ -170,6 +170,20 @@ return {
     },
   },
   {
+    "iamcco/markdown-preview.nvim",
+    ft = { "markdown", "rmd" },
+    cmd = { "MarkdownPreview", "MarkdownPreviewStop", "MarkdownPreviewToggle" },
+    build = "cd app && npx --yes yarn install",
+    keys = {
+      { "<leader>mb", "<cmd>MarkdownPreviewToggle<CR>", desc = "Browser preview (Mermaid)" },
+    },
+    init = function()
+      vim.g.mkdp_filetypes = { "markdown", "rmd" }
+      vim.g.mkdp_auto_start = 0
+      vim.g.mkdp_auto_close = 1
+    end,
+  },
+  {
     "jakewvincent/mkdnflow.nvim",
     ft = { "markdown", "rmd" },
     opts = {
