@@ -31,6 +31,17 @@ opt.clipboard = "unnamedplus" -- use system clipboard as default register
 -- tabs & indents
 opt.autoindent = true -- copy indent from current line when starting new one
 
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("collin-csharp-indent", { clear = true }),
+  pattern = { "cs", "csharp" },
+  callback = function(event)
+    vim.bo[event.buf].expandtab = true
+    vim.bo[event.buf].shiftwidth = 4
+    vim.bo[event.buf].softtabstop = 4
+    vim.bo[event.buf].tabstop = 4
+  end,
+})
+
 -- line wrapping
 opt.wrap = false -- disable line wrapping
 
