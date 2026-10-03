@@ -358,6 +358,8 @@ Markdown prose wraps visually without changing the global no-wrap behavior. Spel
 
 | Mapping | Action |
 | --- | --- |
+| `<leader>mv` | Open the Mermaid block under the cursor in an interactive browser viewer. |
+| `<leader>mD` | Toggle Mermaid inline previews between light and dark themes. |
 | `<leader>mp` | Toggle Markview's rendered preview and raw Markdown source. |
 | `<leader>mh` | Toggle Markview hybrid editing preview. |
 | `<leader>ms` | Toggle a synchronized side-by-side preview. |
@@ -412,6 +414,12 @@ Markdown uses Prettier through Conform and markdownlint-cli2 through nvim-lint.
 
 Use `:ConformInfo` to see whether Prettier is available and what Conform would run. Use `[d`, `]d`, `<leader>ld`, or `<leader>fd` to inspect markdownlint diagnostics. A project `.markdownlint-cli2.*` configuration controls linting rules when present.
 
+### Mermaid Diagrams
+
+Mermaid fences in Markdown and R Markdown render as inline PNG images below their code blocks and refresh automatically as you edit. Standalone `.mmd` files render inline too. Put the cursor inside a fenced diagram and press `<leader>mv` for the interactive browser viewer; on `.mmd` files it opens the whole diagram. `<leader>mb` continues to open the full Markdown document in the browser preview.
+
+In the browser viewer, drag to pan and use the mouse wheel to zoom around the pointer. Use its Theme button or `t` to switch light/dark mode. Buttons and shortcuts provide zoom (`+`/`-`), fit (`f` or double-click), reset (`0`), fullscreen (`F`), export (`d`) as SVG, PNG, JPEG, or WebP, and help (`?`); `h`/`j`/`k`/`l` pan. Raster exports use the theme active when the viewer opened; reopen the viewer after changing Neovim's theme to prepare raster exports in that mode. Press `<leader>mD` in Neovim to toggle the inline terminal preview theme; `:MermaidThemeToggle` does the same. Inline diagrams use the same Mermaid.js bundle and theme, displayed through `image.nvim`'s Kitty backend. Chrome or Chromium is used headlessly to capture them. Refresh waits for a 700 ms pause in typing, and the existing image stays visible until its replacement is ready to avoid flicker. Use `:MermaidBrowserPreview` to open the current diagram and `:MermaidRefresh` to refresh inline images. Rendering requires Chrome/Chromium and a Kitty-graphics-compatible terminal such as Kitty, Ghostty, or WezTerm.
+
 ### Inline Images
 
 `image.nvim` renders actual images inline instead of only showing a link or icon. It uses Kitty's graphics protocol and ImageMagick's `magick` command-line processor.
@@ -434,6 +442,9 @@ For inline images to appear, launch Neovim in Kitty or another terminal compatib
 | `:Markview toggle` | Toggle rendered Markdown preview. |
 | `:Markview hybridToggle` | Toggle hybrid Markdown preview. |
 | `:Markview splitToggle` | Toggle synchronized split preview. |
+| `:MermaidBrowserPreview` | Open the current Mermaid block or standalone diagram in the interactive browser viewer. |
+| `:MermaidRefresh` | Refresh inline Mermaid images in the current buffer. |
+| `:MermaidThemeToggle` | Toggle Mermaid inline preview between light and dark themes. |
 | `:MkdnFollowLink` | Follow the link under the cursor. |
 | `:MkdnTableFormat` | Format the table under the cursor. |
 | `:MkdnToggleToDo` | Toggle a task checkbox. |

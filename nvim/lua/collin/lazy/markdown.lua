@@ -1,3 +1,6 @@
+vim.filetype.add({ extension = { mmd = "mermaid" } })
+require("collin.mermaid_preview").setup()
+
 local function cspell_words(settings_path)
   local content = table.concat(vim.fn.readfile(settings_path), "\n")
   local word_list = content:match('"cSpell%.words"%s*:%s*(%b[])')
@@ -130,6 +133,12 @@ local function configure_markdown_buffer(buf)
   end
 
   local opts = { buffer = buf }
+  vim.keymap.set("n", "<leader>mv", function()
+    require("collin.mermaid_preview").browser_preview()
+  end, { buffer = buf, desc = "Interactive Mermaid browser viewer" })
+  vim.keymap.set("n", "<leader>mD", function()
+    require("collin.mermaid_preview").toggle_theme()
+  end, { buffer = buf, desc = "Toggle Mermaid preview light/dark theme" })
   vim.keymap.set("n", "<leader>mp", "<cmd>Markview toggle<CR>", vim.tbl_extend("force", opts, { desc = "Toggle preview" }))
   vim.keymap.set("n", "<leader>mh", "<cmd>Markview hybridToggle<CR>", vim.tbl_extend("force", opts, { desc = "Toggle hybrid preview" }))
   vim.keymap.set("n", "<leader>ms", "<cmd>Markview splitToggle<CR>", vim.tbl_extend("force", opts, { desc = "Toggle preview split" }))
@@ -168,6 +177,20 @@ return {
         hybrid_modes = { "n", "no", "v", "i" },
       },
     },
+  },
+  {
+    "iamcco/markdown-preview.nvim",
+    ft = { "markdown", "rmd" },
+    cmd = { "MarkdownPreview", "MarkdownPreviewStop", "MarkdownPreviewToggle" },
+    build = "cd app && npx --yes yarn install",
+    keys = {
+      { "<leader>mb", "<cmd>MarkdownPreviewToggle<CR>", desc = "Browser preview (Mermaid)" },
+    },
+    init = function()
+      vim.g.mkdp_filetypes = { "markdown", "rmd" }
+      vim.g.mkdp_auto_start = 0
+      vim.g.mkdp_auto_close = 1
+    end,
   },
   {
     "jakewvincent/mkdnflow.nvim",
