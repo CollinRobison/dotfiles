@@ -1,3 +1,6 @@
+vim.filetype.add({ extension = { mmd = "mermaid" } })
+require("collin.mermaid_preview").setup()
+
 local function cspell_words(settings_path)
   local content = table.concat(vim.fn.readfile(settings_path), "\n")
   local word_list = content:match('"cSpell%.words"%s*:%s*(%b[])')
@@ -130,6 +133,12 @@ local function configure_markdown_buffer(buf)
   end
 
   local opts = { buffer = buf }
+  vim.keymap.set("n", "<leader>mv", function()
+    require("collin.mermaid_preview").browser_preview()
+  end, { buffer = buf, desc = "Interactive Mermaid browser viewer" })
+  vim.keymap.set("n", "<leader>mD", function()
+    require("collin.mermaid_preview").toggle_theme()
+  end, { buffer = buf, desc = "Toggle Mermaid preview light/dark theme" })
   vim.keymap.set("n", "<leader>mp", "<cmd>Markview toggle<CR>", vim.tbl_extend("force", opts, { desc = "Toggle preview" }))
   vim.keymap.set("n", "<leader>mh", "<cmd>Markview hybridToggle<CR>", vim.tbl_extend("force", opts, { desc = "Toggle hybrid preview" }))
   vim.keymap.set("n", "<leader>ms", "<cmd>Markview splitToggle<CR>", vim.tbl_extend("force", opts, { desc = "Toggle preview split" }))
