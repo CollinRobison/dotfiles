@@ -1,6 +1,8 @@
 local M = {}
 
 local inline_previews = {}
+local browser_previews = {}
+local live_server
 local inline_group
 local assets
 local theme_override
@@ -135,33 +137,26 @@ local function preview_html(source, title, interactive, raster_exports)
       "const defaultTheme=" .. vim.json.encode(theme) .. ",requestedTheme=new URLSearchParams(location.search).get('theme');",
       "let activeTheme=requestedTheme==='dark'||requestedTheme==='light'?requestedTheme:defaultTheme;",
       "document.querySelector('main').dataset.theme=activeTheme;document.documentElement.style.background=activeTheme==='dark'?'#181a1b':'#f6f8fa';document.body.style.background=activeTheme==='dark'?'#181a1b':'#f6f8fa';mermaidConfig.theme=activeTheme;",
-      "mermaid.initialize(mermaidConfig);",
-      "mermaid.init(undefined,document.querySelectorAll('.mermaid'));",
-      "let viewerRetries=0;function setupViewer(){",
-      "const svg=document.querySelector('#mermaid-diagram svg');if(!svg||!svg.getAttribute('viewBox')){if(++viewerRetries<80)setTimeout(setupViewer,50);else document.getElementById('mermaid-viewport').textContent='Mermaid.js could not render this diagram.';return;}",
-      "const bounds=svg.getAttribute('viewBox').trim().split(/[ ,]+/).map(Number),width=bounds[2],height=bounds[3];",
-      "svg.style.width=width+'px';svg.style.height=height+'px';svg.style.maxWidth='none';",
-      "const viewport=document.getElementById('mermaid-viewport'),diagram=document.getElementById('mermaid-diagram'),zoomLabel=document.getElementById('mermaid-zoom');",
-      "let zoom=1,panX=0,panY=0,drag=null;",
-      "function draw(){diagram.style.width=width+'px';diagram.style.height=height+'px';diagram.style.left='calc(50% + '+panX+'px)';diagram.style.top='calc(50% + '+panY+'px)';diagram.style.transform='translate(-50%,-50%) scale('+zoom+')';zoomLabel.textContent=Math.round(zoom*100)+'%';}",
-      "function setZoom(value,x,y){const next=Math.max(0.08,Math.min(12,value)),ratio=next/zoom;if(x!==undefined){const r=viewport.getBoundingClientRect(),cx=x-r.left-r.width/2,cy=y-r.top-r.height/2;panX=cx-(cx-panX)*ratio;panY=cy-(cy-panY)*ratio;}zoom=next;draw();}",
-      "function fit(){const r=viewport.getBoundingClientRect();zoom=Math.max(0.08,Math.min(1,(r.width-40)/width,(r.height-40)/height));panX=0;panY=0;draw();}",
-      "function pan(dx,dy){panX+=dx;panY+=dy;draw();}",
-      "const rasterExports=" .. vim.json.encode(raster_exports or {}) .. ";",
-      "for(const option of document.querySelectorAll('#mermaid-export-format option'))if(option.value!=='svg'&&(!rasterExports[option.value]||activeTheme!==defaultTheme))option.disabled=true;", 
+      "mermaidConfig.startOnLoad=false;mermaid.initialize(mermaidConfig);",
+      "const viewport=document.getElementById('mermaid-viewport'),diagram=document.getElementById('mermaid-diagram'),zoomLabel=document.getElementById('mermaid-zoom'),toolbar=document.getElementById('mermaid-toolbar');",
+      "const state={svg:null,width:0,height:0,zoom:1,panX:0,panY:0,drag:null,rasterExports:" .. vim.json.encode(raster_exports or {}) .. "};",
+      "function draw(){if(!state.svg)return;state.svg.style.width=state.width+'px';state.svg.style.height=state.height+'px';state.svg.style.maxWidth='none';diagram.style.width=state.width+'px';diagram.style.height=state.height+'px';diagram.style.left='calc(50% + '+state.panX+'px)';diagram.style.top='calc(50% + '+state.panY+'px)';diagram.style.transform='translate(-50%,-50%) scale('+state.zoom+')';zoomLabel.textContent=Math.round(state.zoom*100)+'%';}",
+      "function setZoom(value,x,y){const next=Math.max(0.08,Math.min(12,value)),ratio=next/state.zoom;if(x!==undefined){const r=viewport.getBoundingClientRect(),cx=x-r.left-r.width/2,cy=y-r.top-r.height/2;state.panX=cx-(cx-state.panX)*ratio;state.panY=cy-(cy-state.panY)*ratio;}state.zoom=next;draw();}",
+      "function fit(){if(!state.width||!state.height)return;const r=viewport.getBoundingClientRect();state.zoom=Math.max(0.08,Math.min(1,(r.width-40)/state.width,(r.height-40)/state.height));state.panX=0;state.panY=0;draw();}",
+      "function pan(dx,dy){state.panX+=dx;state.panY+=dy;draw();}",
       "function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}",
-      "function saveDiagram(format){if(format==='svg'){const copy=svg.cloneNode(true);copy.setAttribute('width',width);copy.setAttribute('height',height);downloadBlob(new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'}),'mermaid-diagram.svg');return;}const mime={png:'image/png',jpg:'image/jpeg',webp:'image/webp'}[format],encoded=rasterExports[format];if(!encoded){alert('This image export is unavailable.');return;}const a=document.createElement('a');a.href='data:'+mime+';base64,'+encoded;a.download='mermaid-diagram.'+format;document.body.appendChild(a);a.click();a.remove();}",
-      "document.getElementById('mermaid-toolbar').addEventListener('click',e=>{const action=e.target.closest('button')?.dataset.action;if(action==='zoom-in')setZoom(zoom*1.25);else if(action==='zoom-out')setZoom(zoom/1.25);else if(action==='fit')fit();else if(action==='reset'){zoom=1;panX=0;panY=0;draw();}else if(action==='fullscreen'){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.();}else if(action==='theme'){const url=new URL(location.href);url.searchParams.set('theme',activeTheme==='dark'?'light':'dark');location.href=url.href;}else if(action==='download')saveDiagram(document.getElementById('mermaid-export-format').value);else if(action==='help')document.getElementById('mermaid-help').classList.toggle('hidden');});",
-      "viewport.addEventListener('wheel',e=>{e.preventDefault();setZoom(zoom*(e.deltaY<0?1.12:1/1.12),e.clientX,e.clientY);},{passive:false});",
-      "viewport.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;drag={x:e.clientX,y:e.clientY,panX,panY};viewport.setPointerCapture(e.pointerId);viewport.classList.add('dragging');});",
-      "viewport.addEventListener('pointermove',e=>{if(!drag)return;panX=drag.panX+e.clientX-drag.x;panY=drag.panY+e.clientY-drag.y;draw();});",
-      "viewport.addEventListener('pointerup',()=>{drag=null;viewport.classList.remove('dragging');});viewport.addEventListener('pointercancel',()=>{drag=null;viewport.classList.remove('dragging');});",
-      "viewport.addEventListener('dblclick',e=>{e.preventDefault();fit();});",
+      "function saveDiagram(format){const svg=state.svg;if(!svg)return;if(format==='svg'){const copy=svg.cloneNode(true);copy.setAttribute('width',state.width);copy.setAttribute('height',state.height);downloadBlob(new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'}),'mermaid-diagram.svg');return;}const mime={png:'image/png',jpg:'image/jpeg',webp:'image/webp'}[format],encoded=state.rasterExports[format];if(!encoded){alert('This image export is unavailable after a live edit; SVG remains available.');return;}const a=document.createElement('a');a.href='data:'+mime+';base64,'+encoded;a.download='mermaid-diagram.'+format;document.body.appendChild(a);a.click();a.remove();}",
+      "async function renderDiagram(source,preserve){diagram.textContent=source;diagram.removeAttribute('data-processed');mermaid.init(undefined,document.querySelectorAll('.mermaid'));let next;for(let i=0;i<100;i++){next=diagram.querySelector('svg');if(next?.getAttribute('viewBox'))break;await new Promise(r=>setTimeout(r,50));}state.svg=next;if(!state.svg||!state.svg.getAttribute('viewBox'))throw new Error('Mermaid.js could not render this diagram');const bounds=state.svg.getAttribute('viewBox').trim().split(/[ ,]+/).map(Number);state.width=bounds[2];state.height=bounds[3];if(!preserve){state.zoom=1;state.panX=0;state.panY=0;}draw();}",
+      "toolbar.addEventListener('click',e=>{const action=e.target.closest('button')?.dataset.action;if(action==='zoom-in')setZoom(state.zoom*1.25);else if(action==='zoom-out')setZoom(state.zoom/1.25);else if(action==='fit')fit();else if(action==='reset'){state.zoom=1;state.panX=0;state.panY=0;draw();}else if(action==='fullscreen'){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.();}else if(action==='theme'){const url=new URL(location.href);url.searchParams.set('theme',activeTheme==='dark'?'light':'dark');location.href=url.href;}else if(action==='download')saveDiagram(document.getElementById('mermaid-export-format').value);else if(action==='help')document.getElementById('mermaid-help').classList.toggle('hidden');});",
+      "let drag=null;viewport.addEventListener('wheel',e=>{e.preventDefault();setZoom(state.zoom*(e.deltaY<0?1.12:1/1.12),e.clientX,e.clientY);},{passive:false});",
+      "viewport.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;drag={x:e.clientX,y:e.clientY,panX:state.panX,panY:state.panY};viewport.setPointerCapture(e.pointerId);viewport.classList.add('dragging');});",
+      "viewport.addEventListener('pointermove',e=>{if(!drag)return;state.panX=drag.panX+e.clientX-drag.x;state.panY=drag.panY+e.clientY-drag.y;draw();});",
+      "viewport.addEventListener('pointerup',()=>{drag=null;viewport.classList.remove('dragging');});viewport.addEventListener('pointercancel',()=>{drag=null;viewport.classList.remove('dragging');});viewport.addEventListener('dblclick',e=>{e.preventDefault();fit();});",
       "window.addEventListener('resize',fit);document.addEventListener('fullscreenchange',fit);",
-      "document.addEventListener('keydown',e=>{if(e.target.closest('button,input,textarea'))return;if(e.key==='+'||e.key==='=')setZoom(zoom*1.25);else if(e.key==='-')setZoom(zoom/1.25);else if(e.key==='0'){zoom=1;panX=0;panY=0;draw();}else if(e.key==='f')fit();else if(e.key==='F'){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.();}else if(e.key==='t'){const url=new URL(location.href);url.searchParams.set('theme',activeTheme==='dark'?'light':'dark');location.href=url.href;}else if(e.key==='d')saveDiagram(document.getElementById('mermaid-export-format').value);else if(e.key==='h')pan(40,0);else if(e.key==='l')pan(-40,0);else if(e.key==='j')pan(0,-40);else if(e.key==='k')pan(0,40);else if(e.key==='?')document.getElementById('mermaid-help').classList.toggle('hidden');});",
-      "draw();fit();",
-      "}",
-      "setTimeout(setupViewer,50);",
+      "document.addEventListener('keydown',e=>{if(e.target.closest('button,input,textarea'))return;if(e.key==='+'||e.key==='=')setZoom(state.zoom*1.25);else if(e.key==='-')setZoom(state.zoom/1.25);else if(e.key==='0'){state.zoom=1;state.panX=0;state.panY=0;draw();}else if(e.key==='f')fit();else if(e.key==='F'){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.();}else if(e.key==='t'){const url=new URL(location.href);url.searchParams.set('theme',activeTheme==='dark'?'light':'dark');location.href=url.href;}else if(e.key==='d')saveDiagram(document.getElementById('mermaid-export-format').value);else if(e.key==='h')pan(40,0);else if(e.key==='l')pan(-40,0);else if(e.key==='j')pan(0,-40);else if(e.key==='k')pan(0,40);else if(e.key==='?')document.getElementById('mermaid-help').classList.toggle('hidden');});",
+      "for(const option of document.querySelectorAll('#mermaid-export-format option'))if(option.value!=='svg'&&(!state.rasterExports[option.value]||activeTheme!==defaultTheme))option.disabled=true;",
+      "async function checkLiveUpdate(){try{const version=await fetch(location.pathname+'.version?'+Date.now(),{cache:'no-store'}).then(r=>r.text());if(!window.mermaidLiveVersion){window.mermaidLiveVersion=version;return;}if(version!==window.mermaidLiveVersion){const page=await fetch(location.pathname+'?'+Date.now(),{cache:'no-store'}).then(r=>r.text()),next=new DOMParser().parseFromString(page,'text/html').querySelector('#mermaid-diagram')?.textContent;if(next!==undefined){window.mermaidLiveVersion=version;state.rasterExports={};for(const option of document.querySelectorAll('#mermaid-export-format option'))if(option.value!=='svg')option.disabled=true;await renderDiagram(next,true);}}}catch(_){}}",
+      "(async()=>{try{await renderDiagram(diagram.textContent,false);}catch(e){console.error(e);}checkLiveUpdate();setInterval(checkLiveUpdate,500);})();",
     }, "\n")
   else
     style[#style + 1] = ".markdown-body{background:var(--background-color)!important}#page-ctn{max-width:900px}.mermaid{margin:0!important}"
@@ -193,9 +188,9 @@ local function preview_html(source, title, interactive, raster_exports)
     '<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">',
     "<title>" .. escaped_title .. "</title>",
     "<style>" .. bundle.page_css .. "\n" .. bundle.markdown_css .. "\n" .. table.concat(style, "\n"),
-    "</style><script>" .. bundle.mermaid:gsub("</script", "<\\/script") .. "</script></head>",
+    "</style><script defer>" .. bundle.mermaid:gsub("</script", "<\\/script") .. "</script></head>",
     body,
-    "<script>" .. script .. "</script></body></html>",
+    "<script defer>" .. script .. "</script></body></html>",
   }, "\n")
 
   return markup, theme
@@ -287,37 +282,98 @@ end
 local function source_at_cursor(buf)
   if vim.bo[buf].filetype == "mermaid" or vim.api.nvim_buf_get_name(buf):match("%.mmd$") then
     local blocks = find_mermaid_blocks(buf)
-    return blocks[1] and blocks[1].source or nil
+    return blocks[1] and blocks[1].source or nil, blocks[1] and 1 or nil
   end
 
   local cursor_row = vim.api.nvim_win_get_cursor(0)[1] - 1
   local blocks, err = find_mermaid_blocks(buf)
-  for _, block in ipairs(blocks) do
+  for index, block in ipairs(blocks) do
     if cursor_row >= block.start_row and cursor_row <= block.end_row then
-      return block.source
+      return block.source, index
     end
   end
   return nil, err or "Place the cursor inside a fenced Mermaid block first"
 end
 
-local function open_html_in_browser(html, title, buf)
+local function browser_html_path(buf)
   local cache_dir = vim.fn.stdpath("cache") .. "/mermaid-browser"
   vim.fn.mkdir(cache_dir, "p")
   local source_name = vim.api.nvim_buf_get_name(buf)
-  local path = cache_dir .. "/" .. vim.fn.sha256(source_name .. tostring(buf)):sub(1, 16) .. ".html"
-  vim.fn.writefile(vim.split(html, "\n", { plain = true }), path)
-  local ok, result = pcall(vim.ui.open, vim.uri_from_fname(path))
-  if not ok or result == false then
-    vim.notify("Could not open Mermaid preview in a browser: " .. tostring(result), vim.log.levels.ERROR)
+  return cache_dir .. "/" .. vim.fn.sha256(source_name .. tostring(buf)):sub(1, 16) .. ".html"
+end
+
+local function ensure_live_server()
+  if live_server then
+    return live_server
+  end
+
+  local python = vim.fn.exepath("python3")
+  if python == "" then
+    return nil
+  end
+
+  local socket = vim.uv.new_tcp()
+  if not socket then
+    return nil
+  end
+  local ok = socket:bind("127.0.0.1", 0)
+  if not ok then
+    socket:close()
+    return nil
+  end
+  local port = socket:getsockname().port
+  socket:close()
+
+  local cache_dir = vim.fn.stdpath("cache") .. "/mermaid-browser"
+  local process = vim.system(
+    { python, "-m", "http.server", tostring(port), "--bind", "127.0.0.1" },
+    { cwd = cache_dir, detach = true, stdout = false, stderr = false }
+  )
+  live_server = { port = port, process = process }
+  return live_server
+end
+
+local function write_browser_html(html, path)
+  local temporary_path = path .. ".tmp"
+  vim.fn.writefile(vim.split(html, "\n", { plain = true }), temporary_path)
+  if vim.fn.rename(temporary_path, path) ~= 0 then
+    vim.fn.delete(temporary_path)
+    return false
+  end
+
+  local version_path = path .. ".version"
+  local version_tmp = version_path .. ".tmp"
+  vim.fn.writefile({ vim.fn.sha256(html) }, version_tmp)
+  if vim.fn.rename(version_tmp, version_path) ~= 0 then
+    vim.fn.delete(version_tmp)
+  end
+  return true
+end
+
+local function open_html_in_browser(html, title, buf, block_index)
+  local path = browser_html_path(buf)
+  write_browser_html(html, path)
+  browser_previews[buf] = { path = path, block_index = block_index, refresh = 0 }
+
+  local server = ensure_live_server()
+  local target = vim.uri_from_fname(path)
+  if server then
+    target = string.format("http://127.0.0.1:%d/%s", server.port, vim.fn.fnamemodify(path, ":t"))
+  end
+  local ok, command, err = pcall(vim.ui.open, target)
+  if not ok then
+    vim.notify("Could not open Mermaid preview in a browser: " .. tostring(command), vim.log.levels.ERROR)
+  elseif not command then
+    vim.notify("Could not open Mermaid preview in a browser: " .. tostring(err), vim.log.levels.ERROR)
   end
 end
 
 local render_block_image
 
 local function render_mermaid_in_browser(buf)
-  local source, err = source_at_cursor(buf)
+  local source, block_index = source_at_cursor(buf)
   if not source then
-    vim.notify(err, vim.log.levels.WARN, { title = "Mermaid browser preview" })
+    vim.notify(block_index, vim.log.levels.WARN, { title = "Mermaid browser preview" })
     return
   end
 
@@ -330,7 +386,7 @@ local function render_mermaid_in_browser(buf)
       return
     end
     vim.notify("Chrome/Chromium is unavailable; browser export is limited to SVG", vim.log.levels.WARN)
-    open_html_in_browser(html, name, buf)
+    open_html_in_browser(html, name, buf, block_index)
     return
   end
 
@@ -340,7 +396,7 @@ local function render_mermaid_in_browser(buf)
       vim.notify("Raster exports could not be prepared: " .. tostring(render_err), vim.log.levels.WARN)
       local html, html_err = preview_html(source, vim.fn.fnamemodify(name, ":t"), true, {})
       if html then
-        open_html_in_browser(html, name, buf)
+        open_html_in_browser(html, name, buf, block_index)
       else
         vim.notify(html_err, vim.log.levels.ERROR, { title = "Mermaid browser preview" })
       end
@@ -370,7 +426,7 @@ local function render_mermaid_in_browser(buf)
             vim.notify(html_err, vim.log.levels.ERROR, { title = "Mermaid browser preview" })
             return
           end
-          open_html_in_browser(html, name, buf)
+          open_html_in_browser(html, name, buf, block_index)
         end
       end)
     end
@@ -382,7 +438,7 @@ local function render_mermaid_in_browser(buf)
       vim.notify("ImageMagick is unavailable; SVG and PNG exports remain available", vim.log.levels.WARN)
       local html, html_err = preview_html(source, vim.fn.fnamemodify(name, ":t"), true, {})
       if html then
-        open_html_in_browser(html, name, buf)
+        open_html_in_browser(html, name, buf, block_index)
       else
         vim.notify(html_err, vim.log.levels.ERROR, { title = "Mermaid browser preview" })
       end
@@ -396,6 +452,42 @@ local function render_mermaid_in_browser(buf)
       finish_export("webp", webp_path, result)
     end)
   end)
+end
+
+local function refresh_browser_preview(buf, session)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+
+  local blocks = find_mermaid_blocks(buf)
+  local block = blocks[session.block_index]
+  if not block then
+    return
+  end
+
+  local name = vim.api.nvim_buf_get_name(buf)
+  local html, err = preview_html(block.source, vim.fn.fnamemodify(name, ":t"), true, {})
+  if not html then
+    vim.notify(err, vim.log.levels.WARN, { title = "Mermaid browser preview" })
+    return
+  end
+  write_browser_html(html, session.path)
+end
+
+local function schedule_browser_refresh(buf)
+  local session = browser_previews[buf]
+  if not session then
+    return
+  end
+
+  session.refresh = session.refresh + 1
+  local refresh = session.refresh
+  vim.defer_fn(function()
+    if browser_previews[buf] ~= session or session.refresh ~= refresh then
+      return
+    end
+    refresh_browser_preview(buf, session)
+  end, 150)
 end
 
 local function image_signature(blocks, width, theme)
@@ -637,6 +729,11 @@ function M.toggle_theme()
   if not refreshed then
     schedule_inline_refresh(vim.api.nvim_get_current_buf())
   end
+  for buf in pairs(browser_previews) do
+    if vim.api.nvim_buf_is_valid(buf) then
+      schedule_browser_refresh(buf)
+    end
+  end
   vim.notify("Mermaid preview theme: " .. theme_override, vim.log.levels.INFO)
 end
 
@@ -666,19 +763,41 @@ function M.setup()
   })
   vim.api.nvim_create_user_command("MermaidRefresh", M.refresh, { desc = "Refresh inline Mermaid images" })
   vim.api.nvim_create_user_command("MermaidThemeToggle", M.toggle_theme, { desc = "Toggle Mermaid preview light/dark theme" })
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    group = vim.api.nvim_create_augroup("collin-mermaid-live-server", { clear = true }),
+    callback = function()
+      if live_server and live_server.process then
+        pcall(function()
+          live_server.process:kill(15)
+        end)
+      end
+      live_server = nil
+    end,
+  })
+
+  local function attach_preview_mappings(buf, description)
+    vim.keymap.set("n", "<leader>mv", M.browser_preview, {
+      buffer = buf,
+      desc = description,
+    })
+    vim.keymap.set("n", "<leader>mD", M.toggle_theme, {
+      buffer = buf,
+      desc = "Toggle Mermaid preview light/dark theme",
+    })
+  end
 
   vim.api.nvim_create_autocmd("FileType", {
     pattern = "mermaid",
     group = vim.api.nvim_create_augroup("collin-mermaid-filetype-mappings", { clear = true }),
     callback = function(args)
-      vim.keymap.set("n", "<leader>mv", M.browser_preview, {
-        buffer = args.buf,
-        desc = "Browser preview of Mermaid diagram",
-      })
-      vim.keymap.set("n", "<leader>mD", M.toggle_theme, {
-        buffer = args.buf,
-        desc = "Toggle Mermaid preview light/dark theme",
-      })
+      attach_preview_mappings(args.buf, "Browser preview of Mermaid diagram")
+    end,
+  })
+  vim.api.nvim_create_autocmd("FileType", {
+    pattern = { "markdown", "rmd" },
+    group = vim.api.nvim_create_augroup("collin-markdown-mermaid-mappings", { clear = true }),
+    callback = function(args)
+      attach_preview_mappings(args.buf, "Interactive Mermaid browser viewer")
     end,
   })
 
@@ -695,6 +814,7 @@ function M.setup()
         delay_ms = 0
       end
       schedule_inline_refresh(buf, delay_ms)
+      schedule_browser_refresh(buf)
     end,
   })
   vim.api.nvim_create_autocmd("BufWipeout", {
@@ -706,6 +826,7 @@ function M.setup()
         clear_inline_images(entry)
         inline_previews[args.buf] = nil
       end
+      browser_previews[args.buf] = nil
     end,
   })
 end
