@@ -221,11 +221,7 @@ function getWelcomeData(ctx: ExtensionContext): WelcomeData {
   const projectPi = join(ctx.cwd, ".pi");
   const globalPi = join(homedir(), ".pi", "agent");
   const mcpConfigPaths = [
-    join(homedir(), ".config", "mcp", "mcp.json"),
-    join(homedir(), ".agents", "mcp.json"),
-    join(homedir(), ".agents", "mcp", "mcp.json"),
     join(globalPi, "mcp.json"),
-    join(ctx.cwd, ".mcp.json"),
     join(projectPi, "mcp.json"),
   ];
   const agentPaths = [

@@ -4,10 +4,9 @@
   "defaultModel": "gpt-6-luna",
   "defaultThinkingLevel": "high",
   "enabledModels": [
-    "openai-codex/gpt-5.6-luna",
-    "openai-codex/gpt-5.4-mini"
+    "openai-codex/gpt-5.6-luna"
   ],
-  "lastChangelogVersion": "0.84.2",
+  "lastChangelogVersion": "1.0.1",
   "showHardwareCursor": true,
   "enableInstallTelemetry": false,
   "warnings": {
@@ -19,7 +18,6 @@
     "npm:pi-permission-system@0.8.0",
     "npm:pi-lsp-adapter@0.1.3",
     "npm:pi-add-dir@1.3.1",
-    "npm:pi-mcp-adapter",
     "npm:pi-subagents"
   ],
   "collin-powerline-welcome": {
