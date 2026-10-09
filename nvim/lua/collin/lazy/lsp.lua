@@ -129,6 +129,27 @@ return {
       callback = function(event)
         local client = assert(vim.lsp.get_client_by_id(event.data.client_id))
 
+        if client:supports_method("textDocument/hover") then
+          vim.keymap.set("n", "K", vim.lsp.buf.hover, {
+            buffer = event.buf,
+            desc = "Show symbol information",
+          })
+        end
+
+        if client:supports_method("textDocument/definition") then
+          vim.keymap.set("n", "gd", vim.lsp.buf.definition, {
+            buffer = event.buf,
+            desc = "Go to definition",
+          })
+        end
+
+        if client:supports_method("textDocument/implementation") then
+          vim.keymap.set("n", "gi", vim.lsp.buf.implementation, {
+            buffer = event.buf,
+            desc = "Go to implementation",
+          })
+        end
+
         if client:supports_method("textDocument/completion") then
           vim.b[event.buf].lsp_completion_enabled = true
           vim.lsp.completion.enable(true, client.id, event.buf, { autotrigger = true })

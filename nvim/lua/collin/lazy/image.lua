@@ -10,7 +10,9 @@ return {
       markdown = {
         enabled = true,
         clear_in_insert_mode = false,
-        download_remote_images = true,
+        -- README badges are remote SVGs; ImageMagick may fail on their font metadata.
+        -- Local images continue to render normally.
+        download_remote_images = false,
         only_render_image_at_cursor = false,
         filetypes = { "markdown", "rmd", "quarto" },
       },
