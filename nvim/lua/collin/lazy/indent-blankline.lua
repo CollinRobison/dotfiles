@@ -10,9 +10,9 @@ return {
     local hooks = require("ibl.hooks")
 
     hooks.register(hooks.type.HIGHLIGHT_SETUP, function()
-      local colors = require("vague").get_palette()
-      vim.api.nvim_set_hl(0, "IblIndentMuted", { fg = colors.line })
-      vim.api.nvim_set_hl(0, "IblScopePurple", { fg = colors.parameter })
+      local colors = require("tokyonight.colors").setup({ style = "moon" })
+      vim.api.nvim_set_hl(0, "IblIndentMuted", { fg = colors.bg_highlight })
+      vim.api.nvim_set_hl(0, "IblScopePurple", { fg = colors.magenta })
     end)
 
     require("ibl").setup({

@@ -1,5 +1,6 @@
 # Pi instructions
 
+- Responses should be clear and concise. Use plain language when possible. Lengthy responses should not be commonplace.
 - Inspect existing files and conventions before making changes.
 - Make the smallest safe change that satisfies the request.
 - Do not expose credentials, tokens, private keys, or session data.

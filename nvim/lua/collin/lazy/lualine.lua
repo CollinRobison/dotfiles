@@ -3,7 +3,7 @@ return {
   event = "VeryLazy",
   dependencies = "nvim-tree/nvim-web-devicons",
   config = function()
-    local colors = require("vague").get_palette()
+    local colors = require("tokyonight.colors").setup({ style = "moon" })
     local lazy_status = require("lazy.status")
     local session = require("auto-session.lib")
 
@@ -15,33 +15,33 @@ return {
       options = {
         theme = {
           normal = {
-            a = { bg = colors.parameter, fg = colors.bg, gui = "bold" },
-            b = { bg = colors.inactiveBg, fg = colors.fg },
+            a = { bg = colors.magenta, fg = colors.bg, gui = "bold" },
+            b = { bg = colors.bg_dark, fg = colors.fg },
             c = { bg = colors.bg, fg = colors.fg },
           },
           insert = {
-            a = { bg = colors.plus, fg = colors.bg, gui = "bold" },
-            b = { bg = colors.inactiveBg, fg = colors.fg },
+            a = { bg = colors.green, fg = colors.bg, gui = "bold" },
+            b = { bg = colors.bg_dark, fg = colors.fg },
             c = { bg = colors.bg, fg = colors.fg },
           },
           visual = {
-            a = { bg = colors.constant, fg = colors.bg, gui = "bold" },
-            b = { bg = colors.inactiveBg, fg = colors.fg },
+            a = { bg = colors.purple, fg = colors.bg, gui = "bold" },
+            b = { bg = colors.bg_dark, fg = colors.fg },
             c = { bg = colors.bg, fg = colors.fg },
           },
           command = {
             a = { bg = colors.warning, fg = colors.bg, gui = "bold" },
-            b = { bg = colors.inactiveBg, fg = colors.fg },
+            b = { bg = colors.bg_dark, fg = colors.fg },
             c = { bg = colors.bg, fg = colors.fg },
           },
           replace = {
             a = { bg = colors.error, fg = colors.bg, gui = "bold" },
-            b = { bg = colors.inactiveBg, fg = colors.fg },
+            b = { bg = colors.bg_dark, fg = colors.fg },
             c = { bg = colors.bg, fg = colors.fg },
           },
           inactive = {
-            a = { bg = colors.inactiveBg, fg = colors.comment, gui = "bold" },
-            b = { bg = colors.inactiveBg, fg = colors.comment },
+            a = { bg = colors.bg_dark, fg = colors.comment, gui = "bold" },
+            b = { bg = colors.bg_dark, fg = colors.comment },
             c = { bg = colors.bg, fg = colors.comment },
           },
         },

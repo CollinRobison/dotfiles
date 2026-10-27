@@ -1,9 +1,13 @@
 return {
   "folke/tokyonight.nvim",
---[[
-  name = "tokyonight-night",
+  priority = 1000,
   config = function()
-	vim.cmd.colorscheme("tokyonight-night")
+    require("tokyonight").setup({
+      style = "moon",
+      on_colors = function(colors)
+        -- Keep comments readable during long sessions.
+        colors.comment = "#828bb8"
+      end,
+    })
   end,
-]]
 }

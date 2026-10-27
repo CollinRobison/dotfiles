@@ -1,6 +1,6 @@
 local opt = vim.opt
 
-vim.cmd.colorscheme("vague")
+vim.cmd.colorscheme("tokyonight-moon")
 
 -- Enable 24-bit GUI colors for themes and UI plugins.
 opt.termguicolors = true
