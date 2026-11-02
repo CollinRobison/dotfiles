@@ -58,13 +58,15 @@ local function configure_spell(buf)
 
       vim.fn.mkdir(cache_dir, "p")
       vim.fn.writefile(words, project_spellfile)
+      vim.cmd("mkspell! " .. vim.fn.fnameescape(project_spellfile))
       table.insert(spellfiles, project_spellfile)
     end
   end
 
-  vim.opt_local.spell = true
+  vim.opt_local.spell = false
   vim.opt_local.spelllang = { "en_us" }
   vim.opt_local.spellfile = spellfiles
+  vim.opt_local.spell = true
 end
 
 local function add_spelling_word(buf)
