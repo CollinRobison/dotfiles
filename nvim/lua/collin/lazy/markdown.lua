@@ -70,6 +70,11 @@ local function configure_spell(buf)
 end
 
 local function add_spelling_word(buf)
+  if vim.fn.expand("<cword>") == "" then
+    vim.notify("No word under cursor to add", vim.log.levels.WARN)
+    return
+  end
+
   vim.fn.mkdir(vim.fs.dirname(project_spellfile(buf)), "p")
   vim.cmd("normal! zg")
 end
