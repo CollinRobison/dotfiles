@@ -39,7 +39,7 @@ Permission prompts can be temporarily auto-approved for the current session with
 
 Pi alerts are controlled by `pi-alerts.json` and are enabled explicitly there. Completion and error states also update the terminal tab title (`⏳`, `✅`, or `❌`) so the tab remains visibly marked until the next task. Use `/pi-alerts status` or `/pi-alerts test` to inspect and test the notification backend.
 
-The third-party `pi-permission-system` package is pinned in `settings.json`; Pi installs missing packages from that global settings file.
+The third-party `pi-permission-system` package is pinned in `settings.json`; Pi installs missing packages from that global settings file. `pi-stereo-view` stays updateable, with `.pi/scripts/patch-stereo-view.sh` preserving full-width Pi footer widgets alongside the split transcript. The script patches the active global package first; rerun it after updating `pi-stereo-view` if an update replaces its source.
 
 ## MCP server integration
 

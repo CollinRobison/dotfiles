@@ -58,6 +58,11 @@ link_item "$source_root/pi-permissions.jsonc" "$target_root/pi-permissions.jsonc
 # Ensure the globally linked Playwright skill has its npm package and browser.
 "$source_root/skills/playwright-browser/scripts/install.sh"
 
+# Keep Stereo View's footer widgets in Pi's full-width dock when the package is installed.
+if [[ -f "$source_root/npm/node_modules/pi-stereo-view/src/layout.ts" ]]; then
+  "$source_root/scripts/patch-stereo-view.sh"
+fi
+
 if [[ "$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null 2>&1 && ! command -v alerter >/dev/null 2>&1; then
   install_alerter="n"
   if [[ "${PI_DOTFILES_YES:-}" == "1" ]]; then
