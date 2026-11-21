@@ -151,6 +151,17 @@ return {
         end
 
         if client:supports_method("textDocument/completion") then
+          -- Neovim autotrigger uses only the server's triggerCharacters by default.
+          -- Expand these to printable ASCII so suggestions appear while typing.
+          local completion_provider = client.server_capabilities.completionProvider
+          if completion_provider then
+            local trigger_characters = {}
+            for i = 32, 126 do
+              trigger_characters[#trigger_characters + 1] = string.char(i)
+            end
+            completion_provider.triggerCharacters = trigger_characters
+          end
+
           vim.b[event.buf].lsp_completion_enabled = true
           vim.lsp.completion.enable(true, client.id, event.buf, { autotrigger = true })
 
