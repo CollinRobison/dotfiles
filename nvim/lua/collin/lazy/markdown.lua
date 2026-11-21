@@ -54,11 +54,15 @@ local function configure_spell(buf)
     local words = cspell_words(settings)
     if #words > 0 then
       local cache_dir = vim.fn.stdpath("cache") .. "/cspell"
-      local project_spellfile = cache_dir .. "/" .. vim.fn.sha256(settings) .. ".utf-8.add"
+      local word_list = table.concat(words, "\n")
+      local project_spellfile = cache_dir .. "/" .. vim.fn.sha256(word_list) .. ".utf-8.add"
+      local compiled_spellfile = project_spellfile .. ".spl"
 
       vim.fn.mkdir(cache_dir, "p")
-      vim.fn.writefile(words, project_spellfile)
-      vim.cmd("mkspell! " .. vim.fn.fnameescape(project_spellfile))
+      if not vim.uv.fs_stat(compiled_spellfile) then
+        vim.fn.writefile(words, project_spellfile)
+        vim.cmd("mkspell! " .. vim.fn.fnameescape(project_spellfile))
+      end
       table.insert(spellfiles, project_spellfile)
     end
   end
