@@ -54,7 +54,8 @@ ESSENTIALS = {
         ("Normal", "gg G", "First / last line of the file."),
         ("Normal", "f{char} ; ,", "Find on a line; repeat forward / backward."),
         ("Normal", "/text n N", "Search; next / previous result."),
-        ("Normal", "Ctrl-o Ctrl-i", "Older / newer jump location."),
+        ("Normal", "Ctrl-o Ctrl-i", "Older / newer jump location; after gd, Ctrl-o returns to the previous location."),
+        ("Normal", "Ctrl-] Ctrl-t", "With a tags file, jump to the tag under the cursor / return from the tag jump."),
     ],
     "Edit with operators & text objects": [
         ("Normal", "d c y", "Delete / change / yank; pair with a motion or object."),

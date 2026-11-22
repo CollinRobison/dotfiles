@@ -47,6 +47,10 @@
     "{\"source\":\"npm:pi-powerline-footer\",\"scope\":\"project\"}": "0.22.0",
     "{\"source\":\"npm:pi-permission-system@0.8.0\",\"scope\":\"project\"}": "0.8.0",
     "{\"source\":\"npm:pi-subagents\",\"scope\":\"project\"}": "0.89.1",
-    "{\"source\":\"npm:pi-stereo-view\",\"scope\":\"project\"}": "0.1.21"
+    "{\"source\":\"npm:pi-stereo-view\",\"scope\":\"project\"}": "0.1.21",
+    "{\"source\":\"npm:pi-powerline-footer\",\"scope\":\"user\"}": "0.22.0",
+    "{\"source\":\"npm:pi-permission-system@0.8.0\",\"scope\":\"user\"}": "0.8.0",
+    "{\"source\":\"npm:pi-subagents\",\"scope\":\"user\"}": "0.89.2",
+    "{\"source\":\"npm:pi-stereo-view\",\"scope\":\"user\"}": "0.1.23"
   }
 }
