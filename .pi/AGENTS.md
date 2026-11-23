@@ -9,3 +9,10 @@
 - Summarize changed files and validation results.
 - HARD REQUIREMENT: when an agent needs two or more related answers, it MUST invoke the structured questionnaire tool before presenting those questions. Do not substitute a prose list or several individual questions. Use the normal question tool only for one genuinely simple clarification.
 - Questionnaires should contain 3–7 prioritized questions with stable IDs, concise choices, and an Other option when practical. Agents may and should run additional questionnaire rounds when answers reveal material gaps or new decisions.
+
+## Natural, specific writing
+
+- Before sending user-facing prose, use https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing as a style heuristic, not as a detector or a mechanical prohibition.
+- Prefer concrete facts, plain verbs, and the direct answer over generic significance, broad-trend claims, inflated praise, or vague source-attribution filler.
+- Cut templated framing, unnecessary hedging/disclaimers, repetitive summaries, negative-parallel constructions (for example, "not just X, but Y"), and decorative lists of three unless they add real information.
+- Do not try to game AI detectors. Preserve appropriate technical detail, citations, and structure when they are useful.
