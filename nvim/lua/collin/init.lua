@@ -7,3 +7,4 @@ require("collin.lazy_init")
 require("collin.set")
 require("collin.remap")
 
+require("collin.keymap_browser").register()

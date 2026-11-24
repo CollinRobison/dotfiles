@@ -12,6 +12,8 @@ A later run replaces changed entries and discovers newly supported configuration
 
 ## Quick start
 
+Run `:KeymapAtlas` inside Neovim to regenerate and open the PDF. Run `:Keymaps` to browse shortcuts and export the PDF from the [local keybinding browser](../keymap-browser/README.md).
+
 From the dotfiles repository root:
 
 ```bash
@@ -130,11 +132,7 @@ These pages are intentionally separate from the source inventory, so searching f
 
 ## Runtime audit
 
-Unless `--skip-runtime-audit` is given, the script starts this checkout in headless Neovim and records **described** active mappings from:
-
-- global contexts;
-- a Markdown buffer; and
-- an NvimTree buffer.
+Unless `--skip-runtime-audit` is given, the script starts this checkout in headless Neovim and records **described** active mappings from global contexts and supported probe buffers including Markdown, Mermaid, NvimTree, and Telescope.
 
 Named mappings present at runtime but absent from the source extraction appear in the **Runtime-discovered keymaps** appendix. Internal `<Plug>` indirection and undocumented default Vim mappings are intentionally not treated as ordinary custom configuration rows.
 

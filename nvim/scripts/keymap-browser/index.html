@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Neovim Keymaps</title>
+  <link rel="stylesheet" href="/style.css">
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="mark" aria-hidden="true">N</span><span>Neovim <strong>Keymaps</strong></span></div>
+    <div class="top-actions">
+      <button id="refresh" type="button" class="quiet">Refresh</button>
+      <button id="atlas" type="button" class="primary"><span aria-hidden="true">↓</span> Regenerate Atlas PDF</button>
+    </div>
+  </header>
+  <main>
+    <div class="heading">
+      <div>
+        <h1>Keybindings</h1>
+        <p id="profile">Reading your Neovim configuration…</p>
+      </div>
+      <div id="leader" class="leader" hidden>Leader <kbd></kbd></div>
+    </div>
+    <div class="search-types" role="group" aria-label="Search type">
+      <button id="keyword-search" type="button" aria-pressed="true">Keyword search</button>
+      <button id="smart-search" type="button" aria-pressed="false">Smart search</button>
+    </div>
+    <div class="toolbar">
+      <label id="keyword-field" class="search">
+        <span aria-hidden="true">⌕</span>
+        <input type="search" id="query" aria-label="Search keybindings" autocomplete="off" spellcheck="false"
+               placeholder="Search by action, keys, plugin, or file">
+        <kbd aria-hidden="true">/</kbd>
+      </label>
+      <form id="smart-form" hidden>
+        <label class="search">
+          <span aria-hidden="true">⌕</span>
+          <input type="search" id="smart-query" aria-label="Describe the action you want"
+                 aria-describedby="smart-note" placeholder="How do I delete the text inside double quotes?"
+                 autocomplete="off" spellcheck="false" maxlength="400" required>
+        </label>
+        <button id="ask-pi" type="submit" class="primary">Search with Pi</button>
+      </form>
+      <label class="mode">Mode <select id="modes"><option value="">All modes</option></select></label>
+    </div>
+    <div id="smart-settings" hidden>
+      <label class="mode">Model <select id="pi-model" disabled><option value="">Loading Pi models…</option></select></label>
+      <label class="mode">Reasoning <select id="pi-thinking" disabled></select></label>
+      <button type="button" id="reload-models" hidden>Reload models</button>
+      <p id="model-status" role="status" hidden></p>
+    </div>
+    <p id="smart-note" hidden>Pi sends your question and shortcut metadata to the selected model when you submit.</p>
+    <div class="layout">
+      <section class="results" aria-labelledby="list-heading">
+        <div id="smart-answer" aria-live="polite"></div>
+        <div class="list-head">
+          <h2 id="list-heading" class="sr-only">Keybinding results</h2>
+          <div id="filters" aria-label="Filter by source" class="filters"></div>
+          <p id="result-count" aria-live="polite"></p>
+        </div>
+        <div id="rows"></div>
+        <button id="more" type="button" hidden>Show more</button>
+      </section>
+      <aside id="details" aria-label="Shortcut details">
+        <h2>Shortcut details</h2>
+        <p>Select a keybinding to view its source or edit its keys.</p>
+      </aside>
+    </div>
+  </main>
+  <div id="status" role="status" hidden></div>
+  <dialog id="edit" aria-labelledby="edit-heading">
+    <form id="edit-form">
+      <div class="dialog-head"><h2 id="edit-heading">Edit shortcut</h2><button id="close-edit" type="button" class="quiet" aria-label="Close">×</button></div>
+      <p id="edit-action"></p>
+      <label for="new-key">New keys</label>
+      <input id="new-key" type="text" autocomplete="off" spellcheck="false" maxlength="128" required>
+      <p class="hint">Use Neovim notation, for example <code>&lt;leader&gt;ff</code> or <code>&lt;C-p&gt;</code>.</p>
+      <div id="review-result" aria-live="polite"></div>
+      <div class="dialog-actions">
+        <button id="cancel-edit" type="button" class="quiet">Cancel</button>
+        <button id="check" type="submit">Check conflicts</button>
+        <button id="save" type="button" class="primary" hidden>Apply to Lua</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
