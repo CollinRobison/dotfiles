@@ -114,15 +114,19 @@ local function add_all_spelling_words(buf)
   vim.api.nvim_win_set_cursor(win, { 1, 0 })
 
   while true do
-    vim.cmd("silent! normal! ]s")
-
     local word = vim.fn.spellbadword()[1]
-    if word == "" then
-      break
-    end
+    if word ~= "" and not added[word] then
+      vim.cmd("normal! zg")
+      added[word] = true
+    else
+      local previous = vim.api.nvim_win_get_cursor(win)
+      vim.cmd("silent! normal! ]s")
 
-    vim.cmd("normal! zg")
-    added[word] = true
+      local current = vim.api.nvim_win_get_cursor(win)
+      if current[1] < previous[1] or (current[1] == previous[1] and current[2] <= previous[2]) then
+        break
+      end
+    end
   end
 
   vim.o.wrapscan = wrapscan
