@@ -19,7 +19,7 @@
   <main>
     <div class="heading">
       <div>
-        <h1>Keybindings</h1>
+        <h1>Keybindings and commands</h1>
         <p id="profile">Reading your Neovim configuration…</p>
       </div>
       <div id="leader" class="leader" hidden>Leader <kbd></kbd></div>
@@ -31,8 +31,8 @@
     <div class="toolbar">
       <label id="keyword-field" class="search">
         <span aria-hidden="true">⌕</span>
-        <input type="search" id="query" aria-label="Search keybindings" autocomplete="off" spellcheck="false"
-               placeholder="Search by action, keys, plugin, or file">
+        <input type="search" id="query" aria-label="Search keybindings and commands" autocomplete="off" spellcheck="false"
+               placeholder="Search by action, keys, command, or file">
         <kbd aria-hidden="true">/</kbd>
       </label>
       <form id="smart-form" hidden>
@@ -52,21 +52,21 @@
       <button type="button" id="reload-models" hidden>Reload models</button>
       <p id="model-status" role="status" hidden></p>
     </div>
-    <p id="smart-note" hidden>Pi sends your question and shortcut metadata to the selected model when you submit.</p>
+    <p id="smart-note" hidden>Pi sends your question and metadata about keybindings and commands to the selected model when you submit.</p>
     <div class="layout">
       <section class="results" aria-labelledby="list-heading">
         <div id="smart-answer" aria-live="polite"></div>
         <div class="list-head">
-          <h2 id="list-heading" class="sr-only">Keybinding results</h2>
+          <h2 id="list-heading" class="sr-only">Search results</h2>
           <div id="filters" aria-label="Filter by source" class="filters"></div>
           <p id="result-count" aria-live="polite"></p>
         </div>
         <div id="rows"></div>
         <button id="more" type="button" hidden>Show more</button>
       </section>
-      <aside id="details" aria-label="Shortcut details">
-        <h2>Shortcut details</h2>
-        <p>Select a keybinding to view its source or edit its keys.</p>
+      <aside id="details" aria-label="Details">
+        <h2>Details</h2>
+        <p>Select a keybinding or command to view its source.</p>
       </aside>
     </div>
   </main>

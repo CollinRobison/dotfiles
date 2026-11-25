@@ -1,5 +1,5 @@
 -- Inspect literal Lua declarations without running the configuration.
-local rows, digests = {}, {}
+local rows, commands, digests = {}, {}, {}
 local file, source
 local function field(node, name)
   return node and node:field(name)[1]
@@ -126,6 +126,14 @@ local function scan(node)
         desc = "Open Mermaid browser preview"
       end
       add(key, literal(key), modes(args[1 + offset]), args[3 + offset], desc, is_local and buffer_context() or global)
+    elseif name == "vim.api.nvim_create_user_command" then
+      local command = literal(args[1])
+      if command then
+        local line = node:start()
+        commands[#commands + 1] = {
+          name = command, desc = literal(options(args[3]).desc), file = file, line = line + 1,
+        }
+      end
     elseif name == "which_key.add" then
       key_specs(args[1])
     elseif name == "map" and (vim.endswith(file, "/dap.lua") or vim.endswith(file, "/neotest.lua")) then
@@ -167,4 +175,4 @@ for _, path in ipairs(arg) do
   local tree = vim.treesitter.get_string_parser(source, "lua"):parse()[1]
   scan(tree:root())
 end
-io.write(vim.json.encode({ rows = rows, digests = digests, runtime = vim.env.VIMRUNTIME }))
+io.write(vim.json.encode({ rows = rows, commands = commands, digests = digests, runtime = vim.env.VIMRUNTIME }))

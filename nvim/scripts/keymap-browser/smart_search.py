@@ -188,9 +188,9 @@ def smart_search(data, rows, leader, localleader, context):
     entries = dict(enumerate(rows, start=1))
     bindings = [
         [ident, row["key"], action_label(row), "".join(row["modes"]),
-         row["context"] if row["scope"] or row["origin"] in ("Kitty", "System") else "",
+         row["context"] if row["scope"] or row.get("kind") == "command" or row["origin"] in ("Kitty", "System") else "",
          row["origin"], row["group"] if row["origin"] in ("Config", "Built-in") else "",
-         builtin_operator(row)]
+         builtin_operator(row), row.get("kind", "binding")]
         for ident, row in entries.items()
     ]
     prompt = {"bindings": bindings, "leader": leader, "localLeader": localleader, "buffer": context,
@@ -199,7 +199,7 @@ def smart_search(data, rows, leader, localleader, context):
     if not isinstance(reply.get("matches"), list) or not isinstance(reply.get("solutions"), list):
         raise SearchUnavailable("Pi returned an unreadable response. Try asking a more specific question.")
     overrides = [row for row in rows if row["origin"] in ("Config", "Runtime", "Built-in")
-                 and not row.get("help") and relevant_scope(row, context)]
+                 and row["chords"] and not row.get("help") and relevant_scope(row, context)]
     recipes = delimiter_recipes(query.strip(), entries)
     targets = {DELIMITERS[entries[recipe["steps"][0]["bindings"][1]]["key"][1]] for recipe in recipes}
 

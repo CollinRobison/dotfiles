@@ -96,6 +96,8 @@ Rows preserve mode and context where known, including Normal, Visual, Insert, Se
 
 Mappings without a usable Lua `desc` receive a best-effort reader-facing description. Add a real `desc` in the Lua configuration when a more precise explanation is needed.
 
+The **AI assisted** category is populated from `nvim/lua/collin/ai/` and the Copilot and CodeCompanion Lazy specs. The same source paths determine the category in the Keymaps browser.
+
 ### Tooling and automatic behavior
 
 The **Configured Tooling** appendix inventories declared:
@@ -116,7 +118,9 @@ The **Commands & automatic behavior** appendix extracts direct user-facing comma
 - configured `<cmd>…<CR>` calls; and
 - command calls made with `vim.cmd(...)` or `vim.cmd.command(...)`.
 
-It lists the literal `:Command` form, a plain-English explanation, and the source file. This includes custom setup commands such as `:MasonInstallDebugAdapters` as well as configured entry points for the file explorer, Telescope, sessions, Git, Markdown, tests, and UI tools.
+It lists the literal `:Command` form, the declaration's `desc` when available, and the source file. The **AI assisted · Ex commands** appendix lists commands declared in the AI sources separately. A command invoked by a mapping is listed only once in the command inventory.
+
+The inventory includes custom setup commands such as `:MasonInstallDebugAdapters` as well as configured entry points for the file explorer, Telescope, sessions, Git, Markdown, tests, and UI tools.
 
 The source-discovered function appendix also inventories callable `vim.*`, `vim.api.*`, `vim.lsp.*`, `vim.diagnostic.*`, `vim.fn.*`, and `require("plugin").method(...)` APIs used by the configuration, with a plain-English description and source file.
 
