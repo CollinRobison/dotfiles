@@ -1,4 +1,5 @@
 local M = {}
+local subscriptions = { pro = true, max = true, team = true, enterprise = true }
 
 -- Child processes get only what their native sign-in and launcher need. Do not
 -- forward API keys, provider/base URL overrides, or auth/permission overrides.
@@ -50,8 +51,9 @@ function M.acp_route(backend, model, action)
   local args = { binary }
   local mode = codex and "read-only" or nil
   if codex then
-    -- Read-only by default: native Codex writes require approval. CodeCompanion
-    -- Inline allows only an approval for editing its temporary buffer copy.
+    -- The ACP package's default model may not be available to ChatGPT sessions.
+    model = model or "gpt-6.2-astra"
+    -- Inline permits only an approval for editing its temporary buffer copy.
     env.INITIAL_AGENT_MODE = mode
     env.CODEX_CONFIG = vim.json.encode({
       model = model,
@@ -122,9 +124,11 @@ function M.with_claude(cwd, on_ready, fail)
         or status.loggedIn ~= true
         or status.authMethod ~= "claude.ai"
         or status.apiProvider ~= "firstParty"
+        or not subscriptions[status.subscriptionType]
+        or (status.apiKeySource and status.apiKeySource ~= vim.NIL)
       then
         return fail(
-          "Claude Code requires an existing first-party claude.ai login. Sign in with the official CLI first."
+          "Claude Code requires an existing first-party claude.ai subscription login. Sign in with the official CLI first."
         )
       end
       on_ready(binary, env)

@@ -4,10 +4,16 @@ local M = {}
 local function executable()
   local path = common.executable("codex")
   if not path and vim.fn.has("mac") == 1 then
-    local suffix = "/Applications/Codex.app/Contents/Resources/codex"
-    for _, candidate in ipairs({ suffix, (vim.env.HOME or "") .. suffix }) do
-      if vim.fn.executable(candidate) == 1 then
-        return candidate
+    local apps = {
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex",
+    }
+    for _, prefix in ipairs({ "", vim.env.HOME or "" }) do
+      for _, app in ipairs(apps) do
+        local candidate = prefix .. app
+        if vim.fn.executable(candidate) == 1 then
+          return candidate
+        end
       end
     end
   end

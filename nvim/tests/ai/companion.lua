@@ -259,7 +259,10 @@ local function test()
   response = function(argv, opts)
     assert(opts.clear_env and not opts.env.ANTHROPIC_API_KEY)
     if argv[2] == "auth" then
-      return { code = 0, stdout = '{"loggedIn":true,"authMethod":"claude.ai","apiProvider":"firstParty"}' }
+      return {
+        code = 0,
+        stdout = '{"loggedIn":true,"authMethod":"claude.ai","apiProvider":"firstParty","subscriptionType":"max"}',
+      }
     end
     assert(
       vim.tbl_contains(argv, "--print") and vim.tbl_contains(argv, "--tools") and vim.tbl_contains(argv, "--safe-mode")

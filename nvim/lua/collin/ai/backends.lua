@@ -21,7 +21,7 @@ function M.request(profile, context, done)
     end
     if
       profile.model ~= nil
-      and (type(profile.model) ~= "string" or #profile.model > 180 or not profile.model:match("^[%w][%w._:/%[%]%-]*$"))
+      and (type(profile.model) ~= "string" or #profile.model > 120 or not profile.model:match("^[%w][%w._:/@%[%]%-]*$"))
     then
       return job.finish("Invalid completion model")
     end

@@ -6,5 +6,6 @@ vim.g.loaded_netrwPlugin = 1
 require("collin.lazy_init")
 require("collin.set")
 require("collin.remap")
+require("collin.ai").setup()
 
 require("collin.keymap_browser").register()

@@ -32,7 +32,7 @@ local function profile_for(profile, action)
   if backend == "claude" and action == "edit" then
     return fail("Claude Code supports native Ask/Chat only here; use an ACP profile for a Neovim inline diff.")
   end
-  if model ~= nil and (type(model) ~= "string" or #model > 160 or not model:match("^[%w][%w._:/@+%-]*$")) then
+  if model ~= nil and (type(model) ~= "string" or #model > 120 or not model:match("^[%w][%w._:/@%[%]%-]*$")) then
     return fail("The selected profile has an invalid model ID.")
   end
   if api_backends[backend] and not model then
@@ -301,10 +301,19 @@ function M.edit(profile)
         active_edits[origin.bufnr] = nil
         return reset(self)
       end
+      local done = inline.done
+      inline.done = function(self, result)
+        if result.error then
+          fail("CodeCompanion could not prepare an inline edit. Check the selected provider and try again.")
+        end
+        return done(self, result)
+      end
       -- `prompt()` interprets adapter=... and #{chat}; send plain input instead.
       inline:send_prompt({ input = prompt })
       if inline.requesting then
         active_edits[origin.bufnr] = inline
+      else
+        fail("CodeCompanion did not start the edit. Try a smaller selection.")
       end
     end)
   end)
