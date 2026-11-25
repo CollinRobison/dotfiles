@@ -4,7 +4,7 @@ local temp = vim.fn.tempname()
 vim.fn.mkdir(temp, "p", 448)
 local job = vim.fn.jobstart({ vim.v.progpath, "--clean", "--embed", "--headless", "-i", "NONE" }, {
   rpc = true,
-  env = { XDG_STATE_HOME = temp, NVIM_AI_PROFILE_FILE = vim.fs.joinpath(temp, "profiles.json") },
+  env = { XDG_CONFIG_HOME = temp, NVIM_AI_PROFILE_FILE = vim.fs.joinpath(temp, "profiles.json") },
 })
 assert(job > 0)
 

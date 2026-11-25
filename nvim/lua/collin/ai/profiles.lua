@@ -4,6 +4,7 @@ local supported = {
   codex = { completion = true, companion = true, inline_edit = true },
   copilot = { completion = true, companion = true, inline_edit = true },
   claude = { completion = true, companion = true },
+  pi = { completion = true, companion = true, inline_edit = true },
   openrouter = { completion = true, companion = true, http = true },
   openai = { completion = true, companion = true, http = true },
   anthropic = { completion = true, companion = true, http = true },
@@ -19,7 +20,7 @@ local default_profile = {
   inline_edit = true,
 }
 local workflows = { completion = true, companion = true }
-local directory = vim.fs.joinpath(vim.fn.stdpath("state"), "ai-workflows")
+local directory = vim.fs.joinpath(vim.fn.stdpath("config"), "ai-workflows")
 local profile_path = vim.env.NVIM_AI_PROFILE_FILE or vim.fs.joinpath(directory, "profiles.json")
 local selection_path = vim.fs.joinpath(directory, "selection.json")
 local profiles, selections, profile_error
@@ -64,6 +65,9 @@ local function normalize(input)
     return nil
   end
   if input.model ~= nil and not matches(input.model, "^[%w][%w._:/@%[%]%-]*$", 120) then
+    return nil
+  end
+  if input.backend == "pi" and not matches(input.model, "^[%w._-]+/[%w][%w._:/@%[%]%-]*$", 120) then
     return nil
   end
   local ref = caps.http and key_reference(input.key_ref) or nil
@@ -158,7 +162,10 @@ local function save()
   if not fd then
     return false
   end
-  local body = vim.json.encode(selections) .. "\n"
+  local body = ('{\n  "completion": %s,\n  "companion": %s\n}\n'):format(
+    vim.json.encode(selections.completion),
+    vim.json.encode(selections.companion)
+  )
   local written = vim.uv.fs_write(fd, body, 0)
   vim.uv.fs_close(fd)
   local ok = written == #body and vim.uv.fs_rename(tmp, selection_path)

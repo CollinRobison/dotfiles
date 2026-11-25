@@ -6,7 +6,7 @@ local original_mode = vim.api.nvim_get_mode
 local original_select = vim.ui.select
 
 local function test()
-  vim.env.XDG_STATE_HOME = temp
+  vim.env.XDG_CONFIG_HOME = temp
   vim.env.NVIM_AI_PROFILE_FILE = vim.fs.joinpath(temp, "profiles.json")
   vim.fn.writefile(
     {
@@ -58,11 +58,9 @@ local function test()
   profiles = require("collin.ai.profiles")
   assert(profiles.current("companion").id == "claude", "selection must survive restart")
   assert(profiles.current("completion").id == "codex-chatgpt")
-  assert(
-    not table
-      .concat(vim.fn.readfile(vim.fs.joinpath(vim.fn.stdpath("state"), "ai-workflows", "selection.json")))
-      :find("key_ref")
-  )
+  local selection_path = vim.fs.joinpath(vim.fn.stdpath("config"), "ai-workflows", "selection.json")
+  local saved = vim.json.decode(table.concat(vim.fn.readfile(selection_path), "\n"))
+  assert(vim.deep_equal(saved, { completion = "codex-chatgpt", companion = "claude" }))
 
   local requests = {}
   package.loaded["collin.ai.backends"] = {

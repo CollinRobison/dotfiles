@@ -76,7 +76,52 @@ function M.acp_route(backend, model, action)
   return { args = args, env = env, backend = backend, mode = mode, model = model, action = action }
 end
 
+function M.with_pi_route(model, action, ready, fail)
+  local bridge = vim.fn.exepath("pi-acp")
+  local launcher = vim.api.nvim_get_runtime_file("scripts/ai/pi-acp-launch.sh", false)[1]
+  if bridge == "" or not launcher or vim.fn.executable(launcher) ~= 1 then
+    return fail("Pi assistance needs pi-acp on PATH and an executable Pi launcher (macOS/Linux).")
+  end
+  local common = require("collin.ai.backends.common")
+  local job = common.job(function(err)
+    if err then
+      fail(err)
+    end
+  end)
+  job.deadline(10000)
+  require("collin.ai.backends.pi").with_oauth(model, job, function(binary, env)
+    env.PI_ACP_PI_COMMAND = launcher
+    env.NVIM_AI_PI_BINARY = binary
+    env.NVIM_AI_PI_MODEL = model
+    if action == "chat" then
+      local extension = vim.api.nvim_get_runtime_file("scripts/ai/pi-chat-tools.ts", false)[1]
+      local root = vim.uv.fs_realpath(vim.fn.getcwd())
+      if not extension or not root or root == "/" or root == vim.uv.fs_realpath(vim.fn.expand("~")) then
+        return job.finish("Open Pi Chat from a project directory to use workspace tools.")
+      end
+      env.NVIM_AI_PI_CHAT_EXTENSION = extension
+      env.NVIM_AI_PI_ROOT = root
+    end
+    ready({ backend = "pi", action = action, args = { bridge }, env = env, model = model })
+    job.finish()
+  end)
+end
+
 function M.acp_adapter(route)
+  if route.backend == "pi" then
+    -- Chat tools use an explicit extension, not ACP filesystem capabilities.
+    local adapter = require("codecompanion.adapters.acp").extend("copilot_acp", {
+      name = "pi_acp",
+      formatted_name = "Pi",
+      opts = { vision = route.action == "chat" },
+      commands = { default = route.args },
+      dotfiles_action = route.action,
+      dotfiles_env = route.env,
+      dotfiles_pi_model = route.model,
+    })
+    adapter.parameters.clientCapabilities = vim.empty_dict()
+    return adapter
+  end
   local codex = route.backend == "codex"
   local preset = codex and "codex" or "copilot_acp"
   local adapter = require("codecompanion.adapters.acp").extend(preset, {

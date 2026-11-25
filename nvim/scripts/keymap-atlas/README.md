@@ -12,7 +12,7 @@ A later run replaces changed entries and discovers newly supported configuration
 
 ## Quick start
 
-Run `:KeymapAtlas` inside Neovim to regenerate and open the PDF. Run `:Keymaps` to browse shortcuts and export the PDF from the [local keybinding browser](../keymap-browser/README.md).
+Run `:KeymapAtlas` inside Neovim to regenerate and open the PDF. Run `:Keymaps` to browse shortcuts and export the PDF from the [local keybinding browser](../keymap-browser/README.md). For AI setup, provider options, and shortcuts, see the [Neovim AI Guide](../../docs/Neovim-AI-Guide.md).
 
 From the dotfiles repository root:
 

@@ -9,7 +9,7 @@ vim.opt.rtp:prepend(assert(vim.env.PLENARY_RTP))
 local temp = fn.tempname()
 assert(fn.mkdir(temp, "p", 448) == 1)
 local fixture = fn.fnamemodify("nvim/tests/ai/companion_fixture.py", ":p")
-for _, name in ipairs({ "codex-acp", "copilot" }) do
+for _, name in ipairs({ "codex-acp", "copilot", "pi", "pi-acp" }) do
   assert(vim.uv.fs_symlink(fixture, vim.fs.joinpath(temp, name)))
 end
 vim.env.PATH = temp .. ":" .. vim.env.PATH
@@ -43,7 +43,101 @@ local function test()
   local companion = require("collin.ai.companion")
   assert(not package.loaded.codecompanion)
   spec.config(nil, spec.opts)
+  local connection = require("codecompanion.acp")
+  local function model_session(adapter, initial, options)
+    local config = { id = "model", category = "model", type = "select", currentValue = initial, options = options }
+    return setmetatable({
+      adapter = adapter,
+      adapter_modified = { defaults = {} },
+      session_id = "fixture",
+      _config_options = { config },
+      send_rpc_request = function(self, request)
+        self.requested_model = request.params.value
+        config.currentValue = self.requested_model
+        return {}
+      end,
+    }, { __index = connection })
+  end
+  local options = {
+    { value = "fixture/start", name = "Start" },
+    { value = "fixture/new", name = "New" },
+    { value = "other/model", name = "Other provider" },
+  }
+  local pi = model_session({ dotfiles_action = "chat", dotfiles_pi_model = "fixture/start" }, "fixture/start", options)
+  eq(2, #pi:get_models().availableModels)
+  assert(not pi:set_model("other/model") and not pi:set_model("fixture/unlisted") and not pi.requested_model)
+  assert(pi:set_model("fixture/new"))
+  eq("fixture/new", pi:get_models().currentModelId)
+  local ask = model_session({ dotfiles_action = "ask", dotfiles_pi_model = "fixture/start" }, "fixture/start", options)
+  eq(1, #ask:get_models().availableModels)
+  assert(not ask:set_model("fixture/new") and not ask.requested_model)
+  local native = model_session({}, "fixture/start", options)
+  eq(3, #native:get_models().availableModels)
+  assert(native:set_model("other/model"))
   local cfg = require("codecompanion.config")
+  local review = require("collin.ai.companion.pi_chat")
+  local tested_file = temp .. "/review-fixture.lua"
+  local write_request = {
+    sessionId = "review",
+    options = { { kind = "allow_once", optionId = "yes" } },
+    toolCall = {
+      title = "Review Pi workspace change",
+      rawInput = {
+        method = "confirm",
+        message = vim.json.encode({ operation = "edit", path = tested_file, before = "before\n", after = "after\n" }),
+      },
+    },
+  }
+  local outcome
+  local review_connection = setmetatable({
+    adapter = { dotfiles_env = { NVIM_AI_PI_ROOT = temp } },
+    session_id = "review",
+    _active_prompt = {},
+    _pending_permissions = {},
+    send_result = function(_, _, result)
+      outcome = result.outcome
+    end,
+  }, { __index = connection })
+  fn.writefile({ "before" }, tested_file)
+  local target = fn.bufadd(tested_file)
+  fn.bufload(target)
+  local function present()
+    outcome = nil
+    review.review(review_connection, 10, write_request)
+    assert(not outcome and fn.maparg("g2", "n", false, true).buffer == 1)
+    eq({ "before" }, fn.readfile(tested_file))
+  end
+  present()
+  keys("q")
+  eq({ outcome = "cancelled" }, outcome)
+  present()
+  api.nvim_buf_set_lines(target, 0, -1, false, { "unsaved" })
+  keys("g2")
+  eq({ outcome = "cancelled" }, outcome)
+  vim.bo[target].modified = false
+  present()
+  keys("g2")
+  eq({ outcome = "selected", optionId = "yes" }, outcome)
+  api.nvim_buf_delete(target, { force = true })
+  local original_select = vim.ui.select
+  vim.ui.select = function(_, opts, cb)
+    assert(opts.prompt:find("Move file", 1, true))
+    cb("Approve once")
+  end
+  local moved_file = temp .. "/moved-fixture.lua"
+  write_request.toolCall.rawInput.message =
+    vim.json.encode({ operation = "move", path = tested_file, destination = moved_file })
+  review.review(review_connection, 10, write_request)
+  eq({ outcome = "selected", optionId = "yes" }, outcome)
+  assert(review_connection.dotfiles_pi_writes[moved_file])
+  write_request.toolCall.rawInput.message =
+    vim.json.encode({ operation = "move", path = tested_file, destination = "/outside.lua" })
+  review.review(review_connection, 10, write_request)
+  eq({ outcome = "cancelled" }, outcome)
+  vim.ui.select = original_select
+  local cli = require("collin.ai.companion.cli")
+  assert(cli.acp_adapter({ backend = "pi", action = "chat", args = {} }).opts.vision)
+  assert(not cli.acp_adapter({ backend = "pi", action = "ask", args = {} }).opts.vision)
   assert(not cfg.adapters.acp.copilot_acp and not cfg.adapters.http.openai)
   local resolved, why = pcall(require("codecompanion.adapters").resolve, "openai")
   assert(not resolved and why:find("retain raw auth headers", 1, true))
@@ -101,6 +195,87 @@ local function test()
     eq(decision == "g3" and original or { original[1], "MIDDLE CHANGED", original[3] }, lines(source))
   end
   assert(not vim.uv.fs_stat(vim.fs.joinpath(temp, "never-write-me")))
+
+  local pi_profile = { id = "pi", backend = "pi", model = "fixture/start" }
+  api.nvim_buf_set_lines(source, 0, -1, false, original)
+  vim.keymap.set("x", "Q", function()
+    companion.ask(pi_profile)
+  end, { buffer = source })
+  keys("gg0<C-v>jlQ")
+  wait_for(function()
+    return vim.bo.buftype == "nofile" and lines()[#lines()] == "Fixture block answer"
+  end, "Pi Visual Block Ask")
+  eq({ "pi v1.6.0", "Fixture block answer" }, lines())
+  eq(original, lines(source))
+  vim.cmd.bwipeout()
+  local function propose_pi(instruction)
+    api.nvim_set_current_buf(source)
+    api.nvim_buf_set_lines(source, 0, -1, false, original)
+    vim.ui.input = function(_, cb)
+      cb(instruction)
+    end
+    vim.keymap.set("x", "E", function()
+      companion.edit(pi_profile)
+    end, { buffer = source })
+    keys("gg0jVE")
+    if instruction == "malformed" then
+      wait_for(function()
+        return last_notice():find("valid replacement lines", 1, true) ~= nil
+      end, "Malformed Pi output")
+    else
+      wait_for(function()
+        return api.nvim_get_current_buf() ~= source and vim.w.pi_edit_review
+      end, "Pi review")
+    end
+    eq(original, lines(source))
+  end
+  propose_pi("malformed")
+  propose_pi("expand")
+  keys("g3")
+  wait_for(function()
+    return api.nvim_get_current_buf() == source
+  end, "Pi reject closes review")
+  eq(original, lines(source))
+  propose_pi("expand")
+  keys("q")
+  wait_for(function()
+    return api.nvim_get_current_buf() == source
+  end, "Pi close discards review")
+  eq(original, lines(source))
+  propose_pi("expand")
+  keys("gr")
+  wait_for(function()
+    return api.nvim_get_current_buf() == source
+  end, "Pi reject hunk closes review")
+  eq(original, lines(source))
+  propose_pi("expand")
+  keys("ga")
+  wait_for(function()
+    return api.nvim_get_current_buf() == source
+  end, "Pi accept hunk closes review")
+  eq({ original[1], "PI CHANGED", "added line", original[3] }, lines(source))
+  keys("u")
+  eq(original, lines(source))
+  propose_pi("expand")
+  api.nvim_buf_set_lines(source, 0, 1, false, { "user updated source" })
+  keys("g2")
+  wait_for(function()
+    return last_notice():find("changed during review", 1, true) ~= nil
+  end, "Stale Pi edit rejected")
+  eq({ "user updated source", original[2], original[3] }, lines(source))
+  propose_pi("delete")
+  keys("g2")
+  wait_for(function()
+    return api.nvim_get_current_buf() == source
+  end, "Pi delete closes review")
+  eq({ original[1], original[3] }, lines(source))
+  api.nvim_buf_set_lines(source, 0, -1, false, original)
+  vim.keymap.set("x", "E", function()
+    companion.edit(codex)
+  end, { buffer = source })
+  vim.ui.input = function(_, cb)
+    cb(question)
+  end
 
   local bad_model = { id = "invalid", backend = "codex", model = "unavailable" }
   companion.ask(bad_model)
@@ -217,9 +392,11 @@ local function test()
     "openai",
     "https://api.openai.com/v1/responses",
     {
-      output = { { type = "message", content = {
-        { type = "output_text", text = "API fixture answer" },
-      } } },
+      output = {
+        { type = "message", content = {
+          { type = "output_text", text = "API fixture answer" },
+        } },
+      },
     },
     { type = "onepassword", reference = "op://vault/item/field" },
     { "/fixture/op", "read", "--no-newline", "op://vault/item/field" }

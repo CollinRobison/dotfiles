@@ -1,0 +1,18 @@
+[
+  {
+    "id": "pi-openai",
+    "label": "Pi · OpenAI",
+    "backend": "pi",
+    "model": "openai/gpt-6.2-astra",
+    "completion": true,
+    "companion": true
+  },
+  {
+    "id": "pi-openai-luna",
+    "label": "Pi · OpenAI Luna",
+    "backend": "pi",
+    "model": "openai/gpt-6-luna",
+    "completion": true,
+    "companion": false
+  }
+]

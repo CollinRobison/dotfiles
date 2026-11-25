@@ -88,13 +88,101 @@ return {
       end
       return write(self, id, params)
     end
-    -- Verify launch choices before any Codex prompt. Upstream's ACP defaults
+    -- Pi extension confirmations go through our one-shot review even if the
+    -- regular chat approval mode has been changed to auto or yolo.
+    local prompt_builder = require("codecompanion.acp.prompt_builder")
+    local permission = prompt_builder.handle_permission_request
+    prompt_builder.handle_permission_request = function(self, id, params)
+      local adapter = self.connection.adapter
+      if adapter and adapter.dotfiles_pi_model and adapter.dotfiles_action == "chat" then
+        return require("collin.ai.companion.pi_chat").review(self.connection, id, params)
+      end
+      return permission(self, id, params)
+    end
+    local done = prompt_builder.handle_done
+    prompt_builder.handle_done = function(self, ...)
+      if self.connection.dotfiles_pi_writes then
+        require("collin.ai.companion.pi_chat").refresh(self.connection)
+      end
+      return done(self, ...)
+    end
+    local read = connection.handle_fs_read_text_file_request
+    connection.handle_fs_read_text_file_request = function(self, id, params)
+      if self.adapter and self.adapter.dotfiles_pi_model then
+        return self:send_error(id, "Pi assistance does not expose the editor filesystem")
+      end
+      return read(self, id, params)
+    end
+    -- Use the agent's advertised list. Pi can expose several providers at once,
+    -- but only the provider selected by the profile passed our OAuth check.
+    local function pi_model_allowed(adapter, model)
+      local initial = adapter.dotfiles_pi_model
+      return model == initial
+        or (
+          adapter.dotfiles_action == "chat"
+          and type(model) == "string"
+          and model:match("^([^/]+)/.+$") == initial:match("^([^/]+)/.+$")
+        )
+    end
+    local get_models = connection.get_models
+    connection.get_models = function(self)
+      local models = get_models(self)
+      local adapter = self.adapter
+      if models and adapter and adapter.dotfiles_pi_model then
+        models.availableModels = vim.tbl_filter(function(model)
+          return pi_model_allowed(adapter, model.modelId)
+        end, models.availableModels)
+      end
+      return models
+    end
+    local set_config = connection.set_config_option
+    connection.set_config_option = function(self, id, value)
+      local adapter = self.adapter
+      if adapter and adapter.dotfiles_pi_model then
+        for _, option in ipairs(self:get_config_options()) do
+          if option.id == id and option.category == "model" then
+            local models = self:get_models()
+            if
+              not models
+              or not vim.iter(models.availableModels):any(function(model)
+                return model.modelId == value
+              end)
+            then
+              vim.notify("Pi model is unavailable for this chat's signed-in provider.", vim.log.levels.WARN)
+              return false
+            end
+            local ok = set_config(self, id, value)
+            local updated = self:get_models()
+            if not ok or not updated or updated.currentModelId ~= value then
+              self:use_session(nil)
+              vim.notify("Pi did not confirm the model switch. Reopen the chat to continue.", vim.log.levels.WARN)
+              return false
+            end
+            return true
+          end
+        end
+      end
+      return set_config(self, id, value)
+    end
+    -- Verify launch choices before any prompt. Upstream's ACP defaults
     -- merely warn when the agent silently picks a different model or mode.
     local establish = connection._establish_session
     connection._establish_session = function(self)
       local ok = establish(self)
       local adapter = self.adapter
-      if not (ok and adapter and adapter.dotfiles_codex_mode) then
+      if not (ok and adapter) then
+        return ok
+      end
+      if adapter.dotfiles_pi_model then
+        local models = self:get_models()
+        if not models or models.currentModelId ~= adapter.dotfiles_pi_model then
+          self:use_session(nil)
+          vim.notify("Pi did not start with the requested profile model.", vim.log.levels.ERROR)
+          return false
+        end
+        return true
+      end
+      if not adapter.dotfiles_codex_mode then
         return ok
       end
       local mode, model
