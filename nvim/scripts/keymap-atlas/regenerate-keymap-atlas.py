@@ -21,7 +21,7 @@ import subprocess
 import sys
 import tempfile
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
 
@@ -35,9 +35,11 @@ PDF_OUT = DESKTOP / "Nvim-Dark-Complete-Atlas.pdf"
 REPO_PDF = NVIM / "docs" / "Nvim-Dark-Complete-Atlas.pdf"
 CATEGORY_FILE = Path(__file__).with_name("atlas-categories.json")
 sys.path.insert(0, str(NVIM / "scripts" / "keymap-browser"))
-from catalog import runtime_snapshot, source_payload
+from catalog import mode_codes, runtime_snapshot, source_payload
 
-MODE_NAMES = {"n": "Normal", "v": "Visual", "x": "Visual", "o": "Operator-pending", "i": "Insert", "s": "Select", "c": "Command", "t": "Terminal"}
+MODE_NAMES = {"n": "Normal", "x": "Visual", "o": "Operator-pending", "i": "Insert", "s": "Select", "c": "Command", "l": "Language", "t": "Terminal"}
+AI_CATEGORY = "AI assisted"
+AI_PLUGIN_SOURCES = {Path("lua/collin/lazy/codecompanion.lua")}
 CATEGORY = {
     "dap": "Debugging", "neotest": "Testing", "lsp": "LSP, Completion & Diagnostics",
     "markdown": "Markdown", "mermaid_preview": "Markdown", "gitsigns": "Git", "telescope": "Find & Navigate",
@@ -94,6 +96,14 @@ class Mapping:
     context: str = "Global"
 
 
+@dataclass(frozen=True)
+class Command:
+    name: str
+    description: str
+    source: str
+    category: str = ""
+
+
 def balanced(text: str, start: int, opener: str = "{", closer: str = "}") -> tuple[str, int] | None:
     """Return one balanced Lua-ish block, respecting quoted strings."""
     depth = 0; quote = None; escaped = False
@@ -130,8 +140,16 @@ def split_top_level(block: str) -> list[str]:
     return items
 
 
+LUA_STRING = r'''(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')'''
+
+
 def quoted_values(value: str) -> list[str]:
-    return re.findall(r'"((?:\\.|[^"\\])*)"', value)
+    return [literal[1:-1] for literal in re.findall(LUA_STRING, value)]
+
+
+def literal_desc(value: str) -> str:
+    match = re.search(rf'\bdesc\s*=\s*({LUA_STRING})', value)
+    return match[1][1:-1] if match else ""
 
 
 def display_key(key: str) -> str:
@@ -155,7 +173,7 @@ def best_effort_description(rhs: str) -> str:
 
 def modes(value: str) -> list[str]:
     found = quoted_values(value)
-    return [MODE_NAMES.get(mode, mode) for mode in found] or ["Normal"]
+    return [MODE_NAMES.get(mode, mode) for mode in mode_codes(found)] or ["Normal"]
 
 
 def file_context(path: Path) -> str:
@@ -168,7 +186,16 @@ def file_context(path: Path) -> str:
 
 
 def category(path: Path) -> str:
+    """Group a configuration-relative Lua path; do not infer AI from keys or descriptions."""
+    if path.is_relative_to("lua/collin/ai") or path in AI_PLUGIN_SOURCES:
+        return AI_CATEGORY
     return CATEGORY.get(path.stem, "Other configured mappings")
+
+
+def source_mapping(path: Path, mode: str, key: str, action: str, context: str) -> Mapping:
+    group = category(path)
+    source = path.as_posix() if group == AI_CATEGORY else path.name
+    return Mapping(mode, key, action, group, source, context)
 
 
 def extract_table_entries(text: str, marker: str, path: Path) -> list[Mapping]:
@@ -187,13 +214,12 @@ def extract_table_entries(text: str, marker: str, path: Path) -> list[Mapping]:
             entry = entry.strip()
             if not entry.startswith("{"): continue
             values = quoted_values(entry)
-            description = re.search(r'desc\s*=\s*"([^"]+)"', entry)
             if not values: continue
-            action = description.group(1) if description else best_effort_description(values[1] if len(values) > 1 else "")
-            mode_match = re.search(r'mode\s*=\s*({[^}]+}|"[^"]+")', entry)
+            action = literal_desc(entry) or best_effort_description(values[1] if len(values) > 1 else "")
+            mode_match = re.search(rf'mode\s*=\s*({{[^}}]+}}|{LUA_STRING})', entry)
             context = file_context(path) if "buffer" in entry else "Global"
             for mode in modes(mode_match.group(1) if mode_match else '"n"'):
-                out.append(Mapping(mode, display_key(values[0]), action, category(path), path.name, context))
+                out.append(source_mapping(path, mode, display_key(values[0]), action, context))
     return out
 
 
@@ -208,15 +234,15 @@ def extract_keymap_calls(text: str, path: Path) -> list[Mapping]:
         cursor = found[1] if found else hit + len(marker)
         if not found: continue
         call = found[0][1:-1]
-        desc = re.search(r'desc\s*=\s*"([^"]+)"', call)
         args = split_top_level(call)
-        if len(args) < 2: continue
+        if len(args) < 3: continue
         key_values = quoted_values(args[1])
         if not key_values: continue
-        action = desc.group(1) if desc else best_effort_description(args[2] if len(args) > 2 else "")
-        context = file_context(path) if "buffer" in call else "Global"
+        opts = args[-1] if len(args) >= 4 else ""
+        action = literal_desc(opts) or best_effort_description(args[2])
+        context = file_context(path) if re.search(r'\bbuffer\s*=', opts) else "Global"
         for mode in modes(args[0]):
-            out.append(Mapping(mode, display_key(key_values[0]), action, category(path), path.name, context))
+            out.append(source_mapping(path, mode, display_key(key_values[0]), action, context))
     return out
 
 
@@ -231,7 +257,7 @@ def extract_wrapper_maps(text: str, path: Path) -> list[Mapping]:
         if len(args) < 3: continue
         key_values = quoted_values(args[0]); desc_values = quoted_values(args[-1])
         if key_values and desc_values:
-            out.append(Mapping("Normal", display_key(key_values[0]), desc_values[-1], category(path), path.name, "Global"))
+            out.append(source_mapping(path, "Normal", display_key(key_values[0]), desc_values[-1], "Global"))
     return out
 
 
@@ -264,8 +290,9 @@ def extract_special_mappings(text: str, path: Path) -> list[Mapping]:
 
 def legacy_source_mappings() -> list[Mapping]:
     entries: list[Mapping] = []
-    for path in sorted(LUA.rglob("*.lua")):
-        text = path.read_text(errors="replace")
+    for file in sorted(LUA.rglob("*.lua")):
+        text = file.read_text(errors="replace")
+        path = file.relative_to(NVIM)
         entries.extend(extract_table_entries(text, "keys =", path))
         entries.extend(extract_table_entries(text, "which_key.add(", path))
         entries.extend(extract_keymap_calls(text, path))
@@ -274,24 +301,31 @@ def legacy_source_mappings() -> list[Mapping]:
     return entries
 
 
-def extract_mappings() -> list[Mapping]:
-    legacy = legacy_source_mappings()
+def load_source_payload() -> dict | None:
     try:
-        payload = source_payload(NVIM)
+        return source_payload(NVIM)
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
+        return None
+
+
+def extract_mappings(payload: dict | None) -> list[Mapping]:
+    legacy = legacy_source_mappings()
+    if payload is None:
         entries = legacy
     else:
         # Retain curated descriptions when the declaration agrees with the legacy extractor.
         labels = {(item.source, item.mode, item.key, item.context): item.description for item in legacy}
         entries = []
         for item in payload["rows"]:
-            path = Path(item["file"])
+            path = Path(item["file"]).relative_to(NVIM)
             key = display_key(item["key"])
-            for mode in item["modes"]:
+            for mode in mode_codes(item["modes"]):
                 name = MODE_NAMES.get(mode, mode)
-                label = labels.get((path.name, name, key, item["context"]))
-                description = item.get("desc") or label or best_effort_description(item["rhs"])
-                entries.append(Mapping(name, key, description, category(path), path.name, item["context"]))
+                entry = source_mapping(path, name, key, item.get("desc") or "", item["context"])
+                if not entry.description:
+                    description = labels.get((entry.source, name, key, entry.context)) or best_effort_description(item["rhs"])
+                    entry = replace(entry, description=description)
+                entries.append(entry)
     # Prefer exact context/source entries, but avoid duplicate key-description rows.
     seen: set[tuple[str, str, str, str]] = set(); output=[]
     for entry in entries:
@@ -308,7 +342,7 @@ def mapping_identity(item: Mapping) -> str:
 def apply_saved_categories(entries: list[Mapping], interactive: bool) -> list[Mapping]:
     data = json.loads(CATEGORY_FILE.read_text()) if CATEGORY_FILE.exists() else {"mapping_categories": {}}
     saved: dict[str, str] = data.setdefault("mapping_categories", {})
-    available = sorted(set(CATEGORY.values()))
+    available = sorted({*CATEGORY.values(), AI_CATEGORY})
     changed = False; output: list[Mapping] = []
     for item in entries:
         identity = mapping_identity(item)
@@ -390,21 +424,39 @@ def describe_command(command: str) -> str:
     return "User-facing command declared by this configuration; run it after typing a colon in Normal mode."
 
 
-def extract_commands() -> list[tuple[str, str, str]]:
-    """Collect direct :command entry points declared in current Lua source."""
-    commands: dict[str, tuple[str, str]] = {}
-    for path in sorted(LUA.rglob("*.lua")):
-        text = path.read_text(errors="replace")
-        for name in re.findall(r'nvim_create_user_command\(\s*["\']([^"\']+)', text):
-            commands[name] = (describe_command(name), path.name)
-        for name in re.findall(r'<cmd>([A-Za-z][A-Za-z0-9_]*)', text):
-            commands.setdefault(name, (describe_command(name), path.name))
-        # Also cover commands invoked from Lua rather than embedded in a mapping.
-        for name in re.findall(r'vim\.cmd\.([A-Za-z][A-Za-z0-9_]*)\s*\(', text):
-            commands.setdefault(name, (describe_command(name), path.name))
-        for command in re.findall(r'vim\.cmd\(\s*["\']([A-Za-z][A-Za-z0-9_]*)', text):
-            commands.setdefault(command, (describe_command(command), path.name))
-    return [(name, description, source) for name, (description, source) in sorted(commands.items(), key=lambda item: item[0].lower())]
+def declared_command(name: str, desc: str, path: Path) -> Command:
+    group = category(path)
+    source = path.as_posix() if group == AI_CATEGORY else path.name
+    return Command(name, desc or describe_command(name), source, group)
+
+
+def extract_commands(payload: dict | None) -> list[Command]:
+    """Collect literal declarations and supplement them with referenced commands."""
+    commands: dict[str, Command] = {}
+    if payload is not None:
+        for item in payload["commands"]:
+            path = Path(item["file"]).relative_to(NVIM)
+            commands[item["name"]] = declared_command(item["name"], item.get("desc") or "", path)
+    files = sorted(LUA.rglob("*.lua"))
+    if (NVIM / "init.lua").is_file():
+        files.insert(0, NVIM / "init.lua")
+    for file in files:
+        path = file.relative_to(NVIM)
+        text = file.read_text(errors="replace")
+        if payload is None:
+            pattern = rf'(?m)^[ \t]*vim\.api\.nvim_create_user_command\s*\(\s*({LUA_STRING})'
+            for match in re.finditer(pattern, text):
+                name = match[1][1:-1]
+                call = balanced(text, text.index("(", match.start()), "(", ")")
+                args = split_top_level(call[0][1:-1]) if call else []
+                desc = literal_desc(args[-1]) if len(args) >= 3 else ""
+                commands[name] = declared_command(name, desc, path)
+        # References alone do not prove an AI integration owns a command.
+        for pattern in (r'<cmd>([A-Za-z][A-Za-z0-9_]*)', r'vim\.cmd\.([A-Za-z][A-Za-z0-9_]*)\s*\(',
+                        r'vim\.cmd\(\s*["\']([A-Za-z][A-Za-z0-9_]*)'):
+            for name in re.findall(pattern, text):
+                commands.setdefault(name, Command(name, describe_command(name), path.name))
+    return sorted(commands.values(), key=lambda item: item.name.lower())
 
 
 def describe_function(function: str) -> str:
@@ -459,8 +511,8 @@ def extract_functions() -> list[tuple[str, str, str]]:
     return [(name, description, source) for name, (description, source) in sorted(functions.items(), key=lambda item: item[0].lower())]
 
 
-def command_rows(items: list[tuple[str, str, str]]) -> str:
-    return "".join(f"<tr><td><code>:{html.escape(name)}</code></td><td>{html.escape(description)}</td><td><code>{html.escape(source)}</code></td></tr>" for name, description, source in items)
+def command_rows(items: list[Command]) -> str:
+    return "".join(f"<tr><td><code>:{html.escape(item.name)}</code></td><td>{html.escape(item.description)}</td><td><code>{html.escape(item.source)}</code></td></tr>" for item in items)
 
 
 def runtime_description(desc: str, rhs: str) -> str:
@@ -535,6 +587,8 @@ def describe_tool(tool: str) -> str:
         "which-key": "Display available keybinding continuations after a key prefix.",
         "mason": "Install and manage external language servers, formatters, linters, and debug adapters.",
         "nvim-lint": "Run configured linters and publish their findings as diagnostics; this setup does not apply markdownlint fixes automatically.",
+        "copilot": "Show AI-generated code suggestions while editing.",
+        "codecompanion": "Use AI chat and editing assistance from Neovim.",
     }
     for needle, description in known.items():
         if needle in lowered: return description
@@ -582,7 +636,17 @@ def teaching_page(title: str, subtitle: str, columns: list[tuple[str, list[tuple
     return f"<section>{page_header(title,'BUILT-IN VIM LANGUAGE + YOUR CONFIGURATION',count)}<div class='teach-grid'>{cards}</div><div class='callout'>{html.escape(note)}</div>{current}</section>"
 
 
-def build_html(entries: list[Mapping], tools: list[tuple[str, str]], commands: list[tuple[str, str, str]], functions: list[tuple[str, str, str]], runtime_count: int, runtime_note: str) -> str:
+def command_pages(items: list[Command], title: str, note: str, count: int) -> list[str]:
+    parts = max(1, (len(items) + 11) // 12)
+    chunk_size = max(1, (len(items) + parts - 1) // parts)
+    pages = []
+    for start in range(0, len(items), chunk_size):
+        suffix = "" if start == 0 else f" · part {start // chunk_size + 1} of {parts}"
+        pages.append(f"<section>{page_header(title + suffix,'COMPLETE GENERATED APPENDIX',count)}<p class='section-note'>{note}</p><table><thead><tr><th>Command</th><th>What it does</th><th>Configuration source</th></tr></thead><tbody>{command_rows(items[start:start + chunk_size])}</tbody></table></section>")
+    return pages
+
+
+def build_html(entries: list[Mapping], tools: list[tuple[str, str]], commands: list[Command], functions: list[tuple[str, str, str]], runtime_count: int, runtime_note: str) -> str:
     grouped: dict[str, list[Mapping]] = defaultdict(list)
     for entry in entries: grouped[entry.category].append(entry)
     active = {(row.source, row.description): row.key for row in entries}
@@ -622,7 +686,11 @@ def build_html(entries: list[Mapping], tools: list[tuple[str, str]], commands: l
         highlights = [row for name in core_categories[index] for row in grouped.get(name, [])]
         columns = [(heading, [(current(key), current(action)) for key, action in rows]) for heading, rows in columns]
         pages.append(teaching_page(title, subtitle, columns, current(note), highlights, len(entries)))
-    index_cards = "".join(f"<div class='index-card'><b>{html.escape(title)}</b><p>{html.escape(words)}</p></div>" for title, words in INDEX_PROMPTS)
+    ai_commands = [item for item in commands if item.category == AI_CATEGORY]
+    index_prompts = list(INDEX_PROMPTS)
+    if ai_commands or AI_CATEGORY in grouped:
+        index_prompts.append((AI_CATEGORY, "AI workflow, inline suggestions, chat, configured AI shortcuts and Ex commands"))
+    index_cards = "".join(f"<div class='index-card'><b>{html.escape(title)}</b><p>{html.escape(words)}</p></div>" for title, words in index_prompts)
     pages.append(f"<section>{page_header('Ctrl+F index','FIND THE COMMAND BY WHAT YOU WANT TO DO',len(entries))}<p class='lede'>Search this PDF for an exact key string or an ordinary word. The guide repeats literal keys in the teaching sections and keeps a complete generated appendix after them.</p><div class='index-grid'>{index_cards}</div><div class='callout'><b>Discover anything else:</b> {html.escape(current('Space f k'))} opens searchable active keymaps. <code>:help keyword</code> explains built-ins; <code>:map</code>, <code>:nmap</code>, and <code>:imap</code> inspect mappings directly; <code>:checkhealth</code> diagnoses the setup.</div></section>")
     tool_parts = (len(tools) + 11) // 12
     tool_chunk_size = (len(tools) + tool_parts - 1) // tool_parts
@@ -648,12 +716,10 @@ def build_html(entries: list[Mapping], tools: list[tuple[str, str]], commands: l
         chunk = functions[start:start + function_chunk_size]
         suffix = "" if start == 0 else f" · part {start // function_chunk_size + 1} of {function_parts}"
         pages.append(f"<section>{page_header('Functions used by this configuration' + suffix,'SOURCE-DISCOVERED REFERENCE',len(entries))}<p class='section-note'>Callable Neovim, Vimscript, and plugin APIs found in the Lua source. These are useful from <code>:lua</code> or inside a callback.</p><table><thead><tr><th>Function</th><th>What it does</th><th>Source</th></tr></thead><tbody>{function_rows(chunk)}</tbody></table></section>")
-    command_parts = max(1, (len(commands) + 11) // 12)
-    command_chunk_size = max(1, (len(commands) + command_parts - 1) // command_parts)
-    for start in range(0, len(commands), command_chunk_size):
-        chunk = commands[start:start + command_chunk_size]
-        suffix = "" if start == 0 else f" · part {start // command_chunk_size + 1} of {command_parts}"
-        pages.append(f"<section>{page_header('Commands & automatic behavior' + suffix,'COMPLETE GENERATED APPENDIX',len(entries))}<p class='section-note'>Type these after <code>:</code> in Normal mode. The tooling inventory explains capabilities that happen automatically or do not have a direct keybinding.</p><table><thead><tr><th>Command</th><th>What it does</th><th>Configuration source</th></tr></thead><tbody>{command_rows(chunk)}</tbody></table></section>")
+    command_note = "Type these after <code>:</code> in Normal mode."
+    pages.extend(command_pages([item for item in commands if item.category != AI_CATEGORY], "Commands & automatic behavior",
+                               command_note + " The tooling inventory explains capabilities that happen automatically or do not have a direct keybinding.", len(entries)))
+    pages.extend(command_pages(ai_commands, AI_CATEGORY + " · Ex commands", command_note, len(entries)))
     for title in sorted(grouped):
         rows = grouped[title]
         sources = html.escape(', '.join(sorted({row.source for row in rows})))
@@ -704,14 +770,15 @@ def main() -> int:
     parser.add_argument("--non-interactive", action="store_true", help="Put unmapped categories in the temporary appendix instead of prompting.")
     parser.add_argument("--desktop-artifacts", action="store_true", help="Also write HTML and PDF preview artifacts to ~/Desktop.")
     args = parser.parse_args()
-    source_entries = extract_mappings()
+    payload = load_source_payload()
+    source_entries = extract_mappings(payload)
     runtime_entries, runtime_note = ([], "Runtime audit skipped") if args.skip_runtime_audit else runtime_audit()
     # Source rows provide curated categories; runtime-only rows make every active typed key discoverable.
     source_keys = {(item.mode, item.key, item.context) for item in source_entries}
     source_entries.extend(item for item in runtime_entries if (item.mode, item.key, item.context) not in source_keys)
     entries = apply_saved_categories(source_entries, interactive=not args.non_interactive)
     tools = extract_tools()
-    commands = extract_commands()
+    commands = extract_commands(payload)
     functions = extract_functions()
     if not entries: raise RuntimeError(f"No mappings found under {LUA}")
     if not tools: raise RuntimeError(f"No configured tools found under {LUA}")

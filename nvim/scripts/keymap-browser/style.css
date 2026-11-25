@@ -101,6 +101,7 @@ input::placeholder { color: var(--muted); opacity: 1; }
 .action { display: block; font-size: .94rem; overflow-wrap: anywhere; }
 .row-meta { display: block; font-size: .78rem; color: var(--muted); overflow-wrap: anywhere; }
 .keys { display: flex; gap: .24rem; flex-wrap: wrap; justify-content: end; min-width: 0; max-width: 19ch; }
+.row .ex-command { max-width: 19ch; overflow-wrap: anywhere; }
 #details { position: sticky; top: 1rem; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); padding: 1rem; overflow-wrap: anywhere; }
 #details h2 { font-size: 1rem; margin-bottom: .43rem; }
 #details p, #edit-action, .hint { color: var(--muted); font-size: .88rem; }

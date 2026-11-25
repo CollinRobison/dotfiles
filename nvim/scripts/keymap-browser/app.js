@@ -71,7 +71,8 @@ function displayParts(raw) {
   });
 }
 
-function keycaps(row, canonical = false) {
+function entryTrigger(row, canonical = false) {
+  if (row.kind === "command") return node("code", row.key, "ex-command");
   const wrap = node("span", "", "keys");
   wrap.title = row.key;
   const values = row.display && !canonical ? [row.display] : displayParts(row.key);
@@ -93,7 +94,7 @@ function details() {
   panel.replaceChildren();
   panel.classList.toggle("selected", !!selected);
   if (selected) {
-    panel.append(node("h2", selected.desc), keycaps(selected));
+    panel.append(node("h2", selected.desc), entryTrigger(selected));
     const list = node("dl");
     for (const [label, value] of [
       ["Source", sourceLabel(selected)], ["Mode", names(selected.modes)], ["Context", selected.context],
@@ -110,7 +111,7 @@ function details() {
       panel.append(button);
     }
   } else {
-    panel.append(node("h2", "Shortcut details"), node("p", "Select a keybinding to view its source or edit its keys."));
+    panel.append(node("h2", "Details"), node("p", "Select a keybinding or command to view its source."));
   }
   if (inventory) {
     const coverage = node("details");
@@ -125,7 +126,7 @@ function details() {
 }
 
 function searchText(row) {
-  const readable = displayParts(row.key);
+  const readable = row.kind === "command" ? [row.key] : displayParts(row.key);
   const leader = inventory.leader === " " ? "Space" : inventory.leader;
   const localLeader = inventory.localleader === " " ? "Space" : inventory.localleader;
   const resolved = readable.map((key) => key === "Leader" ? leader : key === "Local leader" ? localLeader : key);
@@ -211,14 +212,14 @@ function renderRows() {
     && terms.every((term) => row.search.includes(term)));
   $("result-count").textContent = isSmart && smart.pending ? "Asking Pi…"
     : isSmart && !smart.result ? ""
-    : new Intl.NumberFormat().format(rows.length) + (rows.length === 1 ? " shortcut" : " shortcuts");
+    : new Intl.NumberFormat().format(rows.length) + (rows.length === 1 ? " result" : " results");
   $("more").hidden = rows.length <= limit;
   const visible = $("rows");
   visible.replaceChildren();
   renderSolutions(isSmart);
   if (!rows.length) {
     if (isSmart && smart.result?.solutions.length) return;
-    let message = "No shortcuts match your search.";
+    let message = "No keybindings or commands match your search.";
     if (isSmart) {
       if (smart.error) message = smart.error;
       else if (smart.pending) message = "Looking for matching shortcuts…";
@@ -229,7 +230,7 @@ function renderRows() {
   }
   const groups = new Map();
   for (const row of rows.slice(0, limit)) {
-    const title = isSmart ? "Relevant keybindings" : origin === "All" ? row.origin + " · " + row.group : row.group;
+    const title = isSmart ? "Relevant keybindings and commands" : origin === "All" ? row.origin + " · " + row.group : row.group;
     if (!groups.has(title)) {
       const group = node("section", "", "list-group");
       const inner = node("div", "", "group-rows");
@@ -244,7 +245,7 @@ function renderRows() {
     const info = node("span");
     info.append(node("span", isSmart ? row.label || row.desc : row.desc, "action"), node("span",
       [isSmart ? row.origin : "", names(row.modes), row.context].filter(Boolean).join(" · "), "row-meta"));
-    button.append(info, keycaps(row, isSmart));
+    button.append(info, entryTrigger(row, isSmart));
     button.addEventListener("click", () => {
       visible.querySelector('.row[aria-pressed="true"]')?.setAttribute("aria-pressed", "false");
       selected = row;

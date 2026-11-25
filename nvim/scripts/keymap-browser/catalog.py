@@ -62,17 +62,26 @@ def source_payload(config):
 def static_rows(config):
     payload = source_payload(config)
     rows = []
+    atlas = guide()
     for item in payload["rows"]:
         path = Path(item["file"])
-        rel = path.relative_to(config).as_posix()
+        rel = path.relative_to(config)
         digest = payload["digests"][item["file"]]
         item.update(
-            id=f"{rel}:{item['start']}:{digest[:20]}", digest=digest, file=rel, origin="Config",
-            group=guide().category(path), modes=mode_codes(item["modes"]),
-            desc=item.get("desc") or guide().best_effort_description(item["rhs"]),
+            id=f"{rel.as_posix()}:{item['start']}:{digest[:20]}", digest=digest, file=rel.as_posix(), origin="Config",
+            group=atlas.category(rel), modes=mode_codes(item["modes"]),
+            desc=item.get("desc") or atlas.best_effort_description(item["rhs"]),
             editable=path.resolve().is_relative_to(config.resolve()),
         )
         rows.append(item)
+    commands = {item["name"]: item for item in payload["commands"]}
+    for name, item in commands.items():
+        rel = Path(item["file"]).relative_to(config)
+        group = atlas.category(rel)
+        rows.append(dict(id=f"command:{name}", kind="command", origin="Config", key=":" + name,
+                         file=rel.as_posix(), line=item["line"], context="Ex command", scope="", modes=[],
+                         group="User commands" if group == "Other configured mappings" else group,
+                         desc=item.get("desc") or atlas.describe_command(name), editable=False))
     return rows, Path(payload["runtime"])
 
 
@@ -247,7 +256,7 @@ class Catalog:
             row.setdefault("editable", False)
             row.setdefault("group", row["origin"] + " shortcuts")
             row.setdefault("id", f"{row['origin']}:{len(rows)}")
-            row["chords"] = self.keys(row["key"])
+            row["chords"] = () if row.get("kind") == "command" else self.keys(row["key"])
             identity = (row["origin"], row["key"], row["desc"], tuple(row["modes"]), row["scope"],
                         row["context"], row["id"] if row["editable"] else "")
             if identity not in seen:
