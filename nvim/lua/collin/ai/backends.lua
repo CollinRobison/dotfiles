@@ -3,7 +3,6 @@ local M = {}
 
 local modules = {
   codex = "codex",
-  copilot = "copilot",
   claude = "claude",
   pi = "pi",
   openrouter = "http",

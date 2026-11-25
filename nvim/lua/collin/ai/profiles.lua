@@ -2,7 +2,7 @@ local M = {}
 
 local supported = {
   codex = { completion = true, companion = true, inline_edit = true },
-  copilot = { completion = true, companion = true, inline_edit = true },
+  copilot = { companion = true, inline_edit = true },
   claude = { completion = true, companion = true },
   pi = { completion = true, companion = true, inline_edit = true },
   openrouter = { completion = true, companion = true, http = true },
@@ -137,12 +137,6 @@ function M.for_workflow(workflow)
   return vim.tbl_filter(function(profile)
     return profile[workflow]
   end, profiles)
-end
-
-function M.has_backend(name, workflow)
-  return vim.iter(M.for_workflow(workflow)):any(function(profile)
-    return profile.backend == name
-  end)
 end
 
 function M.current(workflow)

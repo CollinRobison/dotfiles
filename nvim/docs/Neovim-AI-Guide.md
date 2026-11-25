@@ -101,7 +101,7 @@ You can add profiles without changing the shortcuts. The selectors remember thei
 | Provider | Autocomplete | Assistance | Setup |
 | --- | --- | --- | --- |
 | Codex · ChatGPT | Codex CLI | CodeCompanion Ask, Edit, and Chat via Codex ACP | Sign in with ChatGPT. The default ACP model is `gpt-6.2-astra`; add a local `codex` profile with an explicit model if your account needs a different one. |
-| GitHub Copilot | Optional `copilot.lua` plugin | CodeCompanion Ask, Edit, and Chat via Copilot ACP | Use `:Copilot auth` for the completion plugin and `copilot login` for the separate Copilot CLI if they require sign-in. Completion shares the full named buffer on request. |
+| GitHub Copilot | Not available | CodeCompanion Ask, Edit, and Chat via Copilot ACP | Install the GitHub Copilot CLI and run `copilot login` if needed. No Neovim Copilot plugin is required. |
 | Claude Code | Official CLI in safe mode | Text-only Ask and native terminal Chat; no inline Edit | Install `claude` with `--safe-mode` support and sign in to an eligible Claude Code subscription. |
 | Pi | Pi RPC; tools disabled | CodeCompanion Ask, reviewed Edit, and Chat via `pi-acp` | Pi 1.x, a saved OAuth sign-in, and an exact `provider/model` ID. The ACP launcher supports macOS and Linux. |
 | OpenRouter, OpenAI, Anthropic | Direct HTTPS requests | Text-only Ask; no Edit or Chat | Specify a model and an external API-key reference. Usage is metered. |

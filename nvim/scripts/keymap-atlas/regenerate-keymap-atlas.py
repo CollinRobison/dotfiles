@@ -39,7 +39,7 @@ from catalog import mode_codes, runtime_snapshot, source_payload
 
 MODE_NAMES = {"n": "Normal", "x": "Visual", "o": "Operator-pending", "i": "Insert", "s": "Select", "c": "Command", "l": "Language", "t": "Terminal"}
 AI_CATEGORY = "AI assisted"
-AI_PLUGIN_SOURCES = {Path("lua/collin/lazy") / name for name in ("copilot.lua", "codecompanion.lua")}
+AI_PLUGIN_SOURCES = {Path("lua/collin/lazy/codecompanion.lua")}
 CATEGORY = {
     "dap": "Debugging", "neotest": "Testing", "lsp": "LSP, Completion & Diagnostics",
     "markdown": "Markdown", "mermaid_preview": "Markdown", "gitsigns": "Git", "telescope": "Find & Navigate",

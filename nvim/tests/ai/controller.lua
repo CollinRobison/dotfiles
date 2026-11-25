@@ -12,6 +12,7 @@ local function test()
     {
       vim.json.encode({
         { id = "copilot", backend = "copilot", completion = true, companion = true },
+        { id = "copilot-completion", backend = "copilot", completion = true },
         { id = "claude", backend = "claude", completion = true, companion = true },
         { id = "invalid-http", backend = "openai", completion = true, model = "a-model", api_key = "dummy" },
         {
@@ -28,11 +29,15 @@ local function test()
     vim.env.NVIM_AI_PROFILE_FILE
   )
   local profiles = require("collin.ai.profiles")
-  assert(#profiles.for_workflow("completion") == 4)
+  assert(#profiles.for_workflow("completion") == 3)
   assert(#profiles.for_workflow("companion") == 4)
   assert(profiles.current("completion").id == "codex-chatgpt")
-  assert(profiles.has_backend("copilot", "completion"))
-  assert(not profiles.has_backend("openai", "completion"))
+  assert(vim.iter(profiles.for_workflow("companion")):any(function(profile)
+    return profile.backend == "copilot" and profile.inline_edit and not profile.completion
+  end))
+  assert(not vim.iter(profiles.for_workflow("completion")):any(function(profile)
+    return profile.backend == "copilot" or profile.backend == "openai"
+  end))
   local function select(id, expected_label)
     vim.ui.select = function(items, opts, done)
       for _, profile in ipairs(items) do
@@ -122,11 +127,11 @@ local function test()
   unchanged()
 
   completion.request()
-  select("copilot")
+  select("router")
   profiles.choose("completion", completion.clear)
   assert(requests[3].cancelled and profiles.current("companion").id == "claude")
   completion.request()
-  assert(requests[4].profile.backend == "copilot")
+  assert(requests[4].profile.backend == "openrouter")
   requests[3].done(nil, "old provider")
   requests[4].done(nil, "fenced\nresponse")
   await(function()

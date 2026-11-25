@@ -36,13 +36,9 @@ class DiscoveryTest(unittest.TestCase):
             })
             -- vim.api.nvim_create_user_command('GhostStamp', function() end, {})
         """)
-        self.write_lua("lua/collin/lazy/copilot.lua", """
+        self.write_lua("lua/collin/lazy/codecompanion.lua", """
             return { 'placeholder/example', keys = {
               { 'gZ', function() end, mode = 'v', desc = 'Rotate the fixture' },
-            } }
-        """)
-        self.write_lua("lua/collin/lazy/codecompanion.lua", """
-            return { 'placeholder/another', keys = {
               { '<F18>', function() end, desc = 'Open the fixture' },
             } }
         """)
